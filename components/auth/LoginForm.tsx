@@ -80,6 +80,14 @@ export function LoginForm() {
         setMemuat(false);
         return;
       }
+      if (hasil.error === "AUTH_SERVER") {
+        // Sekat infra: DB tidak terjangkau — BUKAN kredensial salah.
+        setEror(
+          "Server autentikasi sedang bermasalah (database tidak terjangkau). Coba lagi beberapa saat.",
+        );
+        setMemuat(false);
+        return;
+      }
       // Kembali ke langkah awal bila kredensial dasar yang salah.
       setLangkahOtp(false);
       setOtp("");

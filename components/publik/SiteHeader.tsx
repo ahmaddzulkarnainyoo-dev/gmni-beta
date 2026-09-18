@@ -58,18 +58,20 @@ export async function SiteHeader() {
           <nav aria-label="Akun" className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5">
             {user ? (
               <>
-                <Link
-                  href="/dasbor"
-                  className="inline-flex min-h-6 items-center px-1 text-kertas-200 transition-colors hover:text-white hover:underline underline-offset-4"
-                >
-                  Dasbor
-                </Link>
-                {bolehMasukAdmin(user.roleNama) && (
+                {/* Satu pintu adaptif: admin/editor → /admin, kader → /dasbor. */}
+                {bolehMasukAdmin(user.roleNama) ? (
                   <Link
                     href="/admin"
-                    className="inline-flex min-h-7 items-center rounded-sm border border-white/30 px-2.5 py-1 text-[10px] text-kertas-200 transition-colors hover:border-white hover:text-white"
+                    className="inline-flex min-h-7 items-center rounded-sm border border-white/30 px-2.5 py-1 text-[10px] font-semibold text-kertas-200 transition-colors hover:border-white hover:text-white"
                   >
-                    Admin
+                    Dasbor Admin
+                  </Link>
+                ) : (
+                  <Link
+                    href="/dasbor"
+                    className="inline-flex min-h-6 items-center px-1 text-kertas-200 transition-colors hover:text-white hover:underline underline-offset-4"
+                  >
+                    Dasbor
                   </Link>
                 )}
                 <TombolKeluar variant="link-terang" />

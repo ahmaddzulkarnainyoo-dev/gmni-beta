@@ -50,32 +50,49 @@ export function bylineArtikel(
 
 /** Artikel terbit terbaru (beranda & daftar). Pinned Marhaenisme di atas. */
 export async function ambilTerbitTerbaru(batas = 9) {
-  return prisma.artikel.findMany({
-    where: { status: "TERBIT" },
-    orderBy: [{ disematkan: "desc" }, { tanggalTerbit: "desc" }],
-    take: batas,
-    select: PILIH_ARTIKEL_PUBLIK,
-  });
+  try {
+    return await prisma.artikel.findMany({
+      where: { status: "TERBIT" },
+      orderBy: [{ disematkan: "desc" }, { tanggalTerbit: "desc" }],
+      take: batas,
+      select: PILIH_ARTIKEL_PUBLIK,
+    });
+  } catch (e) {
+    // Guard publik: DB latency/timeout Supabase → halaman utama tetap
+    // render (grid kosong), tidak jatuh ke "Mesin Cetak Macet".
+    console.error("[articles] ambilTerbitTerbaru gagal:", e instanceof Error ? e.message : e);
+    return [];
+  }
 }
 
 export async function ambilTerbitByKategori(kategoriSlug: string, batas = 24) {
-  return prisma.artikel.findMany({
-    where: { status: "TERBIT", kategori: { slug: kategoriSlug } },
-    orderBy: [{ disematkan: "desc" }, { tanggalTerbit: "desc" }],
-    take: batas,
-    select: PILIH_ARTIKEL_PUBLIK,
-  });
+  try {
+    return await prisma.artikel.findMany({
+      where: { status: "TERBIT", kategori: { slug: kategoriSlug } },
+      orderBy: [{ disematkan: "desc" }, { tanggalTerbit: "desc" }],
+      take: batas,
+      select: PILIH_ARTIKEL_PUBLIK,
+    });
+  } catch (e) {
+    console.error("[articles] ambilTerbitByKategori gagal:", e instanceof Error ? e.message : e);
+    return [];
+  }
 }
 
 export async function ambilTerbitBySlug(slug: string) {
-  return prisma.artikel.findFirst({
-    where: { slug, status: "TERBIT" },
-    select: {
-      ...PILIH_ARTIKEL_PUBLIK,
-      konten: true,
-      kategori: { select: { nama: true, slug: true } },
-    },
-  });
+  try {
+    return await prisma.artikel.findFirst({
+      where: { slug, status: "TERBIT" },
+      select: {
+        ...PILIH_ARTIKEL_PUBLIK,
+        konten: true,
+        kategori: { select: { nama: true, slug: true } },
+      },
+    });
+  } catch (e) {
+    console.error("[articles] ambilTerbitBySlug gagal:", e instanceof Error ? e.message : e);
+    return null;
+  }
 }
 
 /** Format tanggal edisi (indeks media cetak). */

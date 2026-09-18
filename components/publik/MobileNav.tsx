@@ -113,12 +113,14 @@ export function MobileNav({
             <div className="mt-4 flex flex-wrap gap-2 border-t border-hitam-900/20 pt-4">
               {user.masuk ? (
                 <>
-                  <Link href="/dasbor" onClick={() => setBuka(false)} className="rounded-sm border border-hitam-900 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white">
-                    Dasbor
-                  </Link>
-                  {bolehMasukAdmin(user.roleNama) && (
+                  {/* Satu pintu adaptif: admin/editor → /admin, kader → /dasbor. */}
+                  {bolehMasukAdmin(user.roleNama) ? (
                     <Link href="/admin" onClick={() => setBuka(false)} className="rounded-sm border border-red-600 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-red-600 transition-colors hover:bg-red-600 hover:text-white">
-                      Admin
+                      Dasbor Admin
+                    </Link>
+                  ) : (
+                    <Link href="/dasbor" onClick={() => setBuka(false)} className="rounded-sm border border-hitam-900 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white">
+                      Dasbor
                     </Link>
                   )}
                   <TombolKeluar variant="tombol" />

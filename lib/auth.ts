@@ -64,15 +64,54 @@ export const authOptions: NextAuthOptions = {
         const sandi = credentials?.password;
         if (!email || !sandi) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-          include: {
-            role: { include: { permissions: { include: { permission: true } } } },
-          },
-        });
-        if (!user || user.statusAkun !== "AKTIF") return null;
+        // === SEKAT INFRA vs KREDENSIAL ================================
+        // Gagal koneksi DB (Supabase pooler timeout dll.) TIDAK boleh
+        // tersamar sebagai "kredensial salah": lempar kode AUTH_SERVER
+        // (log server berisi penyebab asli), client menampilkan pesan
+        // khusus. Kredensial salah tetap return null (CredentialsSignin).
+        let user;
+        try {
+          user = await prisma.user.findUnique({
+            where: { email },
+            include: {
+              role: { include: { permissions: { include: { permission: true } } } },
+            },
+          });
+          if (!user) {
+            // Fallback case-insensitive — email tersimpan dengan kapital berbeda.
+            user = await prisma.user.findFirst({
+              where: { email: { equals: email, mode: "insensitive" } },
+              include: {
+                role: { include: { permissions: { include: { permission: true } } } },
+              },
+            });
+          }
+        } catch (e) {
+          console.error(
+            `[auth] DB tidak terjangkau saat memeriksa ${email}:`,
+            e instanceof Error ? e.message : e,
+          );
+          throw new Error("AUTH_SERVER");
+        }
+        if (!user || user.statusAkun !== "AKTIF") {
+          console.warn(
+            `[auth] kredensial ditolak (${email}): ${
+              !user ? "akun tidak ditemukan" : `status ${user.statusAkun}`
+            }`,
+          );
+          return null;
+        }
 
-        const cocok = await compare(sandi, user.passwordHash);
+        let cocok: boolean;
+        try {
+          cocok = await compare(sandi, user.passwordHash);
+        } catch (e) {
+          console.error(
+            "[auth] gagal memverifikasi hash sandi:",
+            e instanceof Error ? e.message : e,
+          );
+          throw new Error("AUTH_SERVER");
+        }
         if (!cocok) return null;
 
         // Gate 2FA: hanya untuk akun yang mengaktifkannya (opsional).
