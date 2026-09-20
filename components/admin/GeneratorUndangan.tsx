@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Spinner } from "@/components/ui/Spinner";
 
 /**
  * Generator tautan undangan global — satu panel di bagian atas
@@ -52,8 +53,9 @@ export function GeneratorUndangan() {
           type="button"
           disabled={memuat}
           onClick={buat}
-          className="min-h-11 bg-gmnimerah-500 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-gmnimerah-600 disabled:opacity-50"
+          className="inline-flex min-h-11 items-center justify-center gap-2 bg-gmnimerah-500 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-gmnimerah-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
+          {memuat && <Spinner className="h-3.5 w-3.5" />}
           {memuat ? "Membuat..." : "Buat Tautan Undangan"}
         </button>
       </div>

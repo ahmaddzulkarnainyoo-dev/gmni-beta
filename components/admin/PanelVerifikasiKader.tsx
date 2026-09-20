@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/ui/Spinner";
 
 type PendaftarData = {
   id: string;
   namaLengkap: string;
   email: string;
+  nim: string | null;
   username: string;
   cabangKomisariat: string | null;
   tanggalBergabung: string;
@@ -29,8 +32,21 @@ export function PanelVerifikasiKader({
 }: {
   pendaftar: PendaftarData[];
 }) {
+  const router = useRouter();
   const [memuat, setMemuat] = useState<Record<string, string>>({});
   const [eror, setEror] = useState<Record<string, string>>({});
+  const [sukses, setSukses] = useState<string | null>(null);
+
+  /** Pasca-sukses: refresh data server + alihkan panduan ke daftar kader. */
+  function setelahSukses(pesan: string) {
+    setSukses(pesan);
+    router.refresh();
+    setTimeout(() => {
+      document
+        .getElementById("seksi-kader-undangan")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+  }
 
   async function putuskan(id: string, statusAkun: "AKTIF" | "SUSPEND", konfirmasi?: string) {
     if (konfirmasi && !window.confirm(konfirmasi)) return;
@@ -47,7 +63,12 @@ export function PanelVerifikasiKader({
         setEror((e) => ({ ...e, [id]: data.error ?? "Gagal memproses verifikasi." }));
         return;
       }
-      window.location.reload();
+      const nama = pendaftar.find((p) => p.id === id)?.namaLengkap ?? "Kader";
+      setelahSukses(
+        statusAkun === "AKTIF"
+          ? `${nama} disetujui — akun kader aktif & siap masuk lewat NIM.`
+          : `${nama} ditolak (SUSPEND).`,
+      );
     } catch {
       setEror((e) => ({ ...e, [id]: "Tidak dapat menghubungi server." }));
     } finally {
@@ -72,7 +93,7 @@ export function PanelVerifikasiKader({
         setEror((e) => ({ ...e, [id]: data.error ?? "Gagal menghapus pendaftaran." }));
         return;
       }
-      window.location.reload();
+      setelahSukses(`Pendaftaran ${nama} dihapus permanen dari database.`);
     } catch {
       setEror((e) => ({ ...e, [id]: "Tidak dapat menghubungi server." }));
     } finally {
@@ -94,7 +115,16 @@ export function PanelVerifikasiKader({
   }
 
   return (
-    <ul className="mt-6 space-y-4">
+    <div>
+      {sukses && (
+        <p
+          role="status"
+          className="mt-6 border-2 border-hitam-900 bg-kertas-100 px-4 py-3 text-sm font-semibold text-hitam-800"
+        >
+          ✓ {sukses}
+        </p>
+      )}
+      <ul className="mt-6 space-y-4">
       {pendaftar.map((u) => (
         <li key={u.id} className="border-2 border-hitam-900 bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -108,6 +138,9 @@ export function PanelVerifikasiKader({
               <p className="text-sm text-hitam-500">
                 {u.email}
                 <span className="text-hitam-400"> · @{u.username}</span>
+              </p>
+              <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wider text-hitam-600">
+                NIM {u.nim ?? "—"}
               </p>
               <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-hitam-500">
                 {u.cabangKomisariat ?? "Cabang belum diisi"}
@@ -126,8 +159,9 @@ export function PanelVerifikasiKader({
                 type="button"
                 disabled={memuat[u.id] !== ""}
                 onClick={() => putuskan(u.id, "AKTIF")}
-                className="min-h-11 bg-gmnimerah-500 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-gmnimerah-600 disabled:opacity-50"
+                className="inline-flex min-h-11 items-center justify-center gap-2 bg-gmnimerah-500 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-gmnimerah-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
+                {memuat[u.id] === "AKTIF" && <Spinner className="h-3.5 w-3.5" />}
                 {memuat[u.id] === "AKTIF" ? "Menyetujui..." : "Setujui"}
               </button>
               <button
@@ -136,22 +170,25 @@ export function PanelVerifikasiKader({
                 onClick={() =>
                   putuskan(u.id, "SUSPEND", `Tolak pendaftaran ${u.namaLengkap}? Akun diset SUSPEND.`)
                 }
-                className="min-h-11 border-2 border-hitam-900 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white disabled:opacity-50"
+                className="inline-flex min-h-11 items-center justify-center gap-2 border-2 border-hitam-900 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
+                {memuat[u.id] === "SUSPEND" && <Spinner className="h-3.5 w-3.5" />}
                 {memuat[u.id] === "SUSPEND" ? "Menolak..." : "Tolak"}
               </button>
               <button
                 type="button"
                 disabled={memuat[u.id] !== ""}
                 onClick={() => hapus(u.id, u.namaLengkap)}
-                className="min-h-11 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-gmnimerah-700 transition-colors hover:bg-gmnimerah-700 hover:text-white disabled:opacity-50"
+                className="inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-gmnimerah-700 transition-colors hover:bg-gmnimerah-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
+                {memuat[u.id] === "HAPUS" && <Spinner className="h-3.5 w-3.5" />}
                 {memuat[u.id] === "HAPUS" ? "Menghapus..." : "Hapus"}
               </button>
             </div>
           </div>
         </li>
       ))}
-    </ul>
+      </ul>
+    </div>
   );
 }

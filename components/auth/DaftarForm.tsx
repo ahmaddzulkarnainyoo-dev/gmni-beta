@@ -12,6 +12,7 @@ export function DaftarForm({
   pengundang: string;
 }) {
   const [namaLengkap, setNamaLengkap] = useState("");
+  const [nim, setNim] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [cabang, setCabang] = useState("");
@@ -33,7 +34,7 @@ export function DaftarForm({
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, namaLengkap, username, email, password: sandi, cabangKomisariat: cabang }),
+        body: JSON.stringify({ token, namaLengkap, nim, username, email, password: sandi, cabangKomisariat: cabang }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
@@ -103,6 +104,25 @@ export function DaftarForm({
           className="w-full border-2 border-hitam-900 bg-white px-3 py-2 font-sans text-sm text-hitam-900 outline-none transition-colors focus:border-gmnimerah-500"
           placeholder="Nama lengkap sesuai identitas kader"
         />
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
+          NIM
+        </span>
+        <input
+          type="text"
+          required
+          pattern="[A-Za-z0-9]{5,20}"
+          title="NIM 5-20 karakter, hanya huruf dan angka"
+          value={nim}
+          onChange={(e) => setNim(e.target.value)}
+          className="w-full border-2 border-hitam-900 bg-white px-3 py-2 font-sans text-sm uppercase text-hitam-900 outline-none transition-colors focus:border-gmnimerah-500"
+          placeholder="mis. 20211012345"
+        />
+        <span className="mt-1 block text-xs text-hitam-500">
+          NIM menjadi identitas masuk kader — email hanya untuk pemulihan sandi.
+        </span>
       </label>
 
       <label className="block">

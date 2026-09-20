@@ -26,13 +26,17 @@ function lewatBatas(ip: string): boolean {
 
 function validasiPendaftaran(
   namaLengkap: string | undefined,
+  nim: string | undefined,
   username: string | undefined,
   email: string | undefined,
   password: string,
   cabangKomisariat: string | undefined,
 ): string | null {
-  if (!namaLengkap || !username || !email || !password || !cabangKomisariat) {
+  if (!namaLengkap || !nim || !username || !email || !password || !cabangKomisariat) {
     return "Data pendaftaran tidak lengkap. Isi seluruh kolom.";
+  }
+  if (!/^[A-Z0-9]{5,20}$/.test(nim)) {
+    return "NIM 5-20 karakter, hanya huruf dan angka.";
   }
   if (namaLengkap.length < 3 || namaLengkap.length > 100) {
     return "Nama lengkap 3-100 karakter.";
@@ -53,13 +57,16 @@ function validasiPendaftaran(
 }
 
 async function pastikanBelumTerdaftar(
+  nim: string,
   email: string,
   username: string,
 ): Promise<string | null> {
-  const [emailAda, usernameAda] = await Promise.all([
+  const [nimAda, emailAda, usernameAda] = await Promise.all([
+    prisma.user.findUnique({ where: { nim } }),
     prisma.user.findUnique({ where: { email } }),
     prisma.user.findUnique({ where: { username } }),
   ]);
+  if (nimAda) return "NIM sudah terdaftar. Hubungi Admin Redaksi bila ini NIM Anda.";
   if (emailAda || usernameAda) {
     return "Email atau username sudah terdaftar. Gunakan lainnya.";
   }
@@ -78,6 +85,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       token?: string;
       namaLengkap?: string;
+      nim?: string;
       username?: string;
       email?: string;
       password?: string;
@@ -86,6 +94,7 @@ export async function POST(request: Request) {
 
     const token = body.token?.trim() || null;
     const namaLengkap = body.namaLengkap?.trim();
+    const nim = body.nim?.trim().toUpperCase();
     const username = body.username?.trim();
     const email = body.email?.trim().toLowerCase();
     const password = body.password ?? "";
@@ -93,12 +102,13 @@ export async function POST(request: Request) {
 
     const erorValidasi = validasiPendaftaran(
       namaLengkap,
+      nim,
       username,
       email,
       password,
       cabangKomisariat,
     );
-    if (erorValidasi || !namaLengkap || !username || !email || !cabangKomisariat) {
+    if (erorValidasi || !namaLengkap || !nim || !username || !email || !cabangKomisariat) {
       return NextResponse.json(
         { error: erorValidasi ?? "Data pendaftaran tidak lengkap." },
         { status: 400 },
@@ -112,7 +122,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const erorUnik = await pastikanBelumTerdaftar(email, username);
+    const erorUnik = await pastikanBelumTerdaftar(nim, email, username);
     if (erorUnik) {
       return NextResponse.json({ error: erorUnik }, { status: 409 });
     }
@@ -171,6 +181,7 @@ export async function POST(request: Request) {
         prisma.user.create({
           data: {
             namaLengkap,
+            nim,
             username,
             email,
             passwordHash,
@@ -200,6 +211,7 @@ export async function POST(request: Request) {
     const kader = await prisma.user.create({
       data: {
         namaLengkap,
+        nim,
         username,
         email,
         passwordHash,
@@ -215,7 +227,7 @@ export async function POST(request: Request) {
           aksi: "user.daftar_pending",
           entitasTipe: "User",
           entitasId: kader.id,
-          dataSesudah: { email, username, cabangKomisariat },
+          dataSesudah: { nim, email, username, cabangKomisariat },
         },
       })
       .catch(() => undefined);

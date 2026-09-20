@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/ui/Spinner";
 
 type PenggunaData = {
   id: string;
   namaLengkap: string;
   email: string;
+  nim: string | null;
   username: string;
   statusAkun: "AKTIF" | "PENDING" | "SUSPEND";
   roleId: string;
@@ -31,8 +34,10 @@ export function PanelPengguna({
   bisaHapus: boolean;
   bisaUbahRole: boolean;
 }) {
+  const router = useRouter();
   const [memuat, setMemuat] = useState<Record<string, string>>({});
   const [eror, setEror] = useState<Record<string, string>>({});
+  const [sukses, setSukses] = useState<string | null>(null);
   const [tautanPemulihan, setTautanPemulihan] = useState<
     Record<string, string | null>
   >({});
@@ -60,7 +65,8 @@ export function PanelPengguna({
         setEror((e) => ({ ...e, [u.id]: data.error ?? "Gagal mengubah peran." }));
         return;
       }
-      window.location.reload();
+      setSukses(`Peran ${u.namaLengkap} diubah — berlaku saat kader login berikutnya.`);
+      router.refresh();
     } catch {
       setEror((e) => ({ ...e, [u.id]: "Tidak dapat menghubungi server." }));
     } finally {
@@ -82,7 +88,8 @@ export function PanelPengguna({
         setEror((e) => ({ ...e, [u.id]: data.error ?? "Gagal mengubah status." }));
         return;
       }
-      window.location.reload();
+      setSukses(`Status ${u.namaLengkap} diperbarui.`);
+      router.refresh();
     } catch {
       setEror((e) => ({ ...e, [u.id]: "Tidak dapat menghubungi server." }));
     } finally {
@@ -107,7 +114,8 @@ export function PanelPengguna({
         setEror((e) => ({ ...e, [u.id]: data.error ?? "Gagal menghapus akun." }));
         return;
       }
-      window.location.reload();
+      setSukses(`Akun ${u.namaLengkap} dihapus permanen.`);
+      router.refresh();
     } catch {
       setEror((e) => ({ ...e, [u.id]: "Tidak dapat menghubungi server." }));
     } finally {
@@ -164,7 +172,16 @@ export function PanelPengguna({
   }
 
   return (
-    <ul className="mt-6 space-y-4">
+    <div>
+      {sukses && (
+        <p
+          role="status"
+          className="mt-6 border-2 border-hitam-900 bg-kertas-100 px-4 py-3 text-sm font-semibold text-hitam-800"
+        >
+          ✓ {sukses}
+        </p>
+      )}
+      <ul className="mt-6 space-y-4">
       {pengguna.map((u) => (
         <li key={u.id} className="border border-hitam-200 bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -215,6 +232,9 @@ export function PanelPengguna({
               <p className="text-sm text-hitam-500">
                 {u.email} · @{u.username}
               </p>
+              <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wider text-hitam-500">
+                NIM {u.nim ?? "—"}
+              </p>
               {u.diundangOlehEmail && (
                 <p className="font-mono text-[11px] uppercase tracking-wider text-hitam-400">
                   Diundang oleh {u.diundangOlehEmail}
@@ -255,8 +275,9 @@ export function PanelPengguna({
                   type="button"
                   disabled={memuat[u.id] !== ""}
                   onClick={() => buatTautanPemulihan(u)}
-                  className="border-2 border-hitam-900 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 border-2 border-hitam-900 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
+                  {memuat[u.id] === "pemulihan" && <Spinner className="h-3.5 w-3.5" />}
                   {memuat[u.id] === "pemulihan"
                     ? "Membuat..."
                     : "Reset Sandi"}
@@ -267,8 +288,9 @@ export function PanelPengguna({
                   type="button"
                   disabled={memuat[u.id] !== ""}
                   onClick={() => hapusAkun(u)}
-                  className="border-2 border-hitam-900 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-gmnimerah-700 hover:text-white disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 border-2 border-hitam-900 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-gmnimerah-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
+                  {memuat[u.id] === "hapus" && <Spinner className="h-3.5 w-3.5" />}
                   {memuat[u.id] === "hapus" ? "Menghapus..." : "Hapus"}
                 </button>
               )}
@@ -276,6 +298,7 @@ export function PanelPengguna({
           </div>
         </li>
       ))}
-    </ul>
+      </ul>
+    </div>
   );
 }

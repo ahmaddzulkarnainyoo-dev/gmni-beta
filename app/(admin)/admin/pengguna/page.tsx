@@ -18,6 +18,7 @@ export default async function HalamanPenggunaAdmin() {
         id: true,
         namaLengkap: true,
         email: true,
+        nim: true,
         username: true,
         statusAkun: true,
         tokenUndangan: true,
@@ -33,6 +34,7 @@ export default async function HalamanPenggunaAdmin() {
         id: true,
         namaLengkap: true,
         email: true,
+        nim: true,
         username: true,
         cabangKomisariat: true,
         tanggalBergabung: true,
@@ -50,6 +52,7 @@ export default async function HalamanPenggunaAdmin() {
     id: u.id,
     namaLengkap: u.namaLengkap,
     email: u.email,
+    nim: u.nim,
     username: u.username,
     statusAkun: u.statusAkun,
     roleId: u.role.id,
@@ -63,6 +66,7 @@ export default async function HalamanPenggunaAdmin() {
     id: u.id,
     namaLengkap: u.namaLengkap,
     email: u.email,
+    nim: u.nim,
     username: u.username,
     cabangKomisariat: u.cabangKomisariat,
     tanggalBergabung: u.tanggalBergabung.toISOString(),
@@ -93,7 +97,7 @@ export default async function HalamanPenggunaAdmin() {
         </div>
         <PanelVerifikasiKader pendaftar={dataMenunggu} />
       </section>
-      <section aria-label="Kader dan undangan" className="mt-10">
+      <section aria-label="Kader dan undangan" id="seksi-kader-undangan" className="mt-10 scroll-mt-20">
         <h2 className="border-b-2 border-hitam-900 pb-2 font-serif text-xl font-extrabold text-hitam-900">
           Kader & Undangan
         </h2>

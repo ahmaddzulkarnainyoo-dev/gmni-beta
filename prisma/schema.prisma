@@ -107,6 +107,7 @@ model User {
   namaLengkap       String
   username          String   @unique
   email             String   @unique
+  nim               String?  @unique /// NIM kader — identitas login (email untuk recovery); nullable utk akun admin/legacy
   nomorWa           String?  @unique /// terverifikasi OTP (Fase 2)
   passwordHash      String
   fotoProfil        String? /// URL ke object storage (Vercel Blob/Cloudinary)

@@ -5,32 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getSession, signIn } from "next-auth/react";
 import Link from "next/link";
 import { bolehMasukAdmin } from "@/lib/nav";
-
-/** Spinner putih kecil untuk tombol saat autentikasi berlangsung. */
-function Spinner() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 24 24"
-      fill="none"
-      className="h-4 w-4 animate-spin"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-        className="opacity-25"
-      />
-      <path
-        fill="currentColor"
-        className="opacity-90"
-        d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
-      />
-    </svg>
-  );
-}
+import { Spinner } from "@/components/ui/Spinner";
 
 /**
  * Formulir masuk (Credentials + langkah 2FA) — dikirim ke endpoint NextAuth.
@@ -44,7 +19,7 @@ export function LoginForm() {
   const callbackUrl = params.get("callbackUrl");
   const tujuan = callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/dasbor";
 
-  const [email, setEmail] = useState("");
+  const [identitas, setIdentitas] = useState("");
   const [sandi, setSandi] = useState("");
   const [otp, setOtp] = useState("");
   const [langkahOtp, setLangkahOtp] = useState(false);
@@ -57,7 +32,7 @@ export function LoginForm() {
     setEror(null);
     const hasil = await signIn("credentials", {
       redirect: false,
-      email,
+      email: identitas,
       password: sandi,
       ...(langkahOtp ? { otpToken: otp } : {}),
     });
@@ -91,7 +66,7 @@ export function LoginForm() {
       // Kembali ke langkah awal bila kredensial dasar yang salah.
       setLangkahOtp(false);
       setOtp("");
-      setEror("Email atau sandi salah. Pastikan akun berstatus aktif.");
+      setEror("NIM atau sandi salah. Pastikan akun berstatus aktif.");
       setMemuat(false);
       return;
     }
@@ -118,7 +93,8 @@ export function LoginForm() {
           Masuk Kader
         </h1>
         <p className="mt-1 text-sm text-hitam-500">
-          Gunakan email dan sandi yang terdaftar sebagai kader terverifikasi.
+          Gunakan NIM kader dan sandi yang terdaftar. Akun lama dapat memakai
+          email; email juga menjadi kanal pemulihan sandi.
         </p>
       </div>
 
@@ -133,15 +109,16 @@ export function LoginForm() {
 
       <label className="block">
         <span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
-          Email
+          NIM
         </span>
         <input
-          type="email"
+          type="text"
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border-2 border-hitam-900 bg-white px-3 py-2 font-sans text-sm text-hitam-900 outline-none transition-colors focus:border-gmnimerah-500"
-          placeholder="kader@contoh.id"
+          autoComplete="username"
+          value={identitas}
+          onChange={(e) => setIdentitas(e.target.value)}
+          className="w-full border-2 border-hitam-900 bg-white px-3 py-2 font-sans text-sm uppercase text-hitam-900 outline-none transition-colors focus:border-gmnimerah-500"
+          placeholder="mis. 20211012345 (akun lama: email)"
         />
       </label>
 

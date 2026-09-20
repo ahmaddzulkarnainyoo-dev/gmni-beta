@@ -55,14 +55,19 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Kredensial Kader",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "NIM atau Email", type: "text" },
         password: { label: "Sandi", type: "password" },
         otpToken: { label: "Kode 2FA", type: "text" },
       },
       async authorize(credentials) {
-        const email = credentials?.email?.toLowerCase().trim();
+        // Identitas utama: NIM kader (uppercase). Fallback: email — untuk akun
+        // admin/legacy yang belum memiliki NIM (anti-lockout).
+        const identitas = credentials?.email?.trim() ?? "";
         const sandi = credentials?.password;
-        if (!email || !sandi) return null;
+        if (!identitas || !sandi) return null;
+        const nimUpper = identitas.toUpperCase();
+        const emailLower = identitas.toLowerCase();
+        const bentukEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(identitas);
 
         // === SEKAT INFRA vs KREDENSIAL ================================
         // Gagal koneksi DB (Supabase pooler timeout dll.) TIDAK boleh
@@ -72,30 +77,38 @@ export const authOptions: NextAuthOptions = {
         let user;
         try {
           user = await prisma.user.findUnique({
-            where: { email },
+            where: { nim: nimUpper },
             include: {
               role: { include: { permissions: { include: { permission: true } } } },
             },
           });
-          if (!user) {
-            // Fallback case-insensitive — email tersimpan dengan kapital berbeda.
-            user = await prisma.user.findFirst({
-              where: { email: { equals: email, mode: "insensitive" } },
+          if (!user && bentukEmail) {
+            // Fallback email (backward compat) + pencarian case-insensitive.
+            user = await prisma.user.findUnique({
+              where: { email: emailLower },
               include: {
                 role: { include: { permissions: { include: { permission: true } } } },
               },
             });
+            if (!user) {
+              user = await prisma.user.findFirst({
+                where: { email: { equals: emailLower, mode: "insensitive" } },
+                include: {
+                  role: { include: { permissions: { include: { permission: true } } } },
+                },
+              });
+            }
           }
         } catch (e) {
           console.error(
-            `[auth] DB tidak terjangkau saat memeriksa ${email}:`,
+            `[auth] DB tidak terjangkau saat memeriksa ${identitas}:`,
             e instanceof Error ? e.message : e,
           );
           throw new Error("AUTH_SERVER");
         }
         if (!user || user.statusAkun !== "AKTIF") {
           console.warn(
-            `[auth] kredensial ditolak (${email}): ${
+            `[auth] kredensial ditolak (${identitas}): ${
               !user ? "akun tidak ditemukan" : `status ${user.statusAkun}`
             }`,
           );

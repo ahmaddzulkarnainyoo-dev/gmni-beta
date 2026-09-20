@@ -14,6 +14,7 @@ const INPUT =
  */
 export function FormPendaftaranPublik({ tokenTidakSah }: { tokenTidakSah: boolean }) {
   const [namaLengkap, setNamaLengkap] = useState("");
+  const [nim, setNim] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [cabangKomisariat, setCabangKomisariat] = useState("");
@@ -35,7 +36,7 @@ export function FormPendaftaranPublik({ tokenTidakSah }: { tokenTidakSah: boolea
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ namaLengkap, username, email, password: sandi, cabangKomisariat }),
+        body: JSON.stringify({ namaLengkap, nim, username, email, password: sandi, cabangKomisariat }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
@@ -113,6 +114,23 @@ export function FormPendaftaranPublik({ tokenTidakSah }: { tokenTidakSah: boolea
           className={INPUT}
           placeholder="Nama lengkap sesuai identitas kader"
         />
+      </label>
+
+      <label className="block">
+        <span className={LABEL}>NIM</span>
+        <input
+          type="text"
+          required
+          pattern="[A-Za-z0-9]{5,20}"
+          title="NIM 5-20 karakter, hanya huruf dan angka"
+          value={nim}
+          onChange={(e) => setNim(e.target.value)}
+          className={`${INPUT} uppercase`}
+          placeholder="mis. 20211012345"
+        />
+        <span className="mt-1 block text-xs text-hitam-500">
+          NIM menjadi identitas masuk kader — email hanya untuk pemulihan sandi.
+        </span>
       </label>
 
       <label className="block">
