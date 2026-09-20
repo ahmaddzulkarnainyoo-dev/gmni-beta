@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { HalamanStatisView } from "@/components/publik/HalamanStatisView";
+import { FormHakJawab } from "@/components/publik/FormHakJawab";
 import { ambilHalaman, deskripsiDariHalaman } from "@/lib/halaman";
 
 export const dynamic = "force-dynamic";
@@ -16,5 +17,12 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HalamanHakJawab() {
   const h = await ambilHalaman("hak-jawab");
   if (!h) notFound();
-  return <HalamanStatisView judul={h.judul} konten={h.konten} />;
+  return (
+    <>
+      <HalamanStatisView judul={h.judul} konten={h.konten} />
+      <div className="mx-auto max-w-3xl px-4 pb-12">
+        <FormHakJawab />
+      </div>
+    </>
+  );
 }

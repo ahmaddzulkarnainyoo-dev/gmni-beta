@@ -49,6 +49,14 @@ enum StatusAkun {
   SUSPEND
 }
 
+/// Catatan pengajuan Hak Jawab pembaca (blueprint 12 — Pedoman Media Siber).
+enum StatusHakJawab {
+  MENUNGGU /// baru diajukan, menunggu tinjauan redaksi
+  DIPROSES /// sedang ditinjau redaksi
+  DIJAWAB /// sudah dijawab & jawaban tampil/tersimpan
+  DITOLAK /// tidak memenuhi syarat (spam/di luar lingkup)
+}
+
 /// Status moderasi komentar publik (blueprint 7.5 & 8.3).
 enum StatusKomentar {
   TAMPIL
@@ -118,6 +126,7 @@ model User {
   role              Role     @relation(fields: [roleId], references: [id])
   statusAkun        StatusAkun @default(AKTIF)
   profilTersembunyi Boolean  @default(false) /// toggle sembunyikan dari cari & DM (6.2)
+  sembunyikanDariPapan Boolean @default(false) /// sembunyikan kader dari papan leaderboard publik (kontrol Super Admin)
   totpPendingSecret String?  /// secret tentatif TOTP saat wizard setup (4.2)
   totpSecret        String?  /// secret aktif TOTP (RFC 6238, base32)
   is2FAEnabled      Boolean  @default(false) /// 2FA TOTP aktif
@@ -148,6 +157,11 @@ model User {
   iklanDibuat       Iklan[] @relation("IklanDibuatOleh")
   donasiDiverifikasi Donasi[] @relation("DonasiDiverifikasiOleh")
   undanganDibuat    TokenUndangan[] @relation("UndanganDibuatOleh")
+  hakJawabDijawab   HakJawab[]      @relation("HakJawabDijawabOleh")
+  ajusPoinDiterima  AjusPoin[]      @relation("AjusPoinUser")
+  ajusPoinDiberikan AjusPoin[]      @relation("AjusPoinOleh")
+  konfigDonasiDiubah KonfigurasiDonasi[] @relation("KonfigDonasiOleh")
+  pengaturanSitusDiubah PengaturanSitus[] @relation("PengaturanSitusOleh")
   tokenPemulihan    TokenPemulihan[]
   pemulihanDibuat   TokenPemulihan[] @relation("PemulihanDibuatOleh")
 
@@ -557,4 +571,77 @@ model TokenPemulihan {
 
   @@index([userId])
   @@index([kedaluwarsaAt])
+}
+
+// ============================================================
+// SUB-FASE LANJUTAN — PENYESUAIAN POIN MANUAL LEADERBOARD
+// Ledger terpisah dari KegiatanKader: dijumlahkan pada agregasi papan.
+// ============================================================
+
+model AjusPoin {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation("AjusPoinUser", fields: [userId], references: [id], onDelete: Cascade)
+  poin         Int      /// + (kontribusi lapangan) atau - (pelanggaran etika)
+  alasan       String   @db.Text /// wajib — jejak keputusan Super Admin
+  dibuatOlehId String?
+  dibuatOleh   User?    @relation("AjusPoinOleh", fields: [dibuatOlehId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// ============================================================
+// HAK JAWAB — pengajuan balasan pembaca (Pedoman Media Siber).
+// ============================================================
+
+model HakJawab {
+  id                 String        @id @default(cuid())
+  namaPengaju        String /// 2–80 karakter
+  emailPengaju       String? /// opsional — untuk balasan langsung
+  judulPemberitaan   String
+  urlPemberitaan     String?
+  isi                String        @db.Text /// maks 5000 karakter
+  status             StatusHakJawab @default(MENUNGGU)
+  jawabanRedaksi     String?       @db.Text
+  dijawabOlehId      String?
+  dijawabOleh        User?         @relation("HakJawabDijawabOleh", fields: [dijawabOlehId], references: [id], onDelete: SetNull)
+  dijawabAt          DateTime?
+  createdAt          DateTime      @default(now())
+
+  @@index([status, createdAt])
+}
+
+// ============================================================
+// KONFIGURASI DONASI — rekening & QRIS dikelola bendahara via admin
+// (menggantikan konstanta hardcoded lib/monetisasi.ts bila baris ada).
+// Single-row (id tetap "utama").
+// ============================================================
+
+model KonfigurasiDonasi {
+  id             String   @id @default("utama")
+  bankNama       String
+  rekeningNomor  String
+  atasNama       String
+  qrisUrl        String?
+  diubahOlehId   String?
+  diubahOleh     User?    @relation("KonfigDonasiOleh", fields: [diubahOlehId], references: [id], onDelete: SetNull)
+  updatedAt      DateTime @updatedAt
+}
+
+// ============================================================
+// PENGATURAN SITUS — konfigurasi umum (single-row, id "utama").
+// ============================================================
+
+model PengaturanSitus {
+  id               String   @id @default("utama")
+  namaSitus        String
+  tagline          String?
+  emailKontak      String?
+  waKontak         String?
+  maintenanceMode  Boolean  @default(false)
+  maintenancePesan String?
+  diubahOlehId     String?
+  diubahOleh       User?    @relation("PengaturanSitusOleh", fields: [diubahOlehId], references: [id], onDelete: SetNull)
+  updatedAt        DateTime @updatedAt
 }

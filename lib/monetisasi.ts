@@ -34,6 +34,44 @@ export function fmtRupiah(nominal: number): string {
   return `Rp${nominal.toLocaleString("id-ID")}`;
 }
 
+export type KonfigDonasiTampilan = {
+  bankNama: string;
+  rekeningNomor: string;
+  atasNama: string;
+  qrisUrl: string | null;
+  dariDb: boolean;
+};
+
+/**
+ * Ambil konfigurasi donasi: baris DB (dikelola bendahara via /admin/iklan-donasi)
+ * bila ada; bila kosong/gagal, jatuh ke konstanta resmi di bawah. Tidak pernah
+ * melempar — halaman publik /donasi harus selalu render.
+ */
+export async function ambilKonfigurasiDonasi(
+  db: { konfigurasiDonasi: { findUnique: (args: { where: { id: string } }) => Promise<{
+    bankNama: string;
+    rekeningNomor: string;
+    atasNama: string;
+    qrisUrl: string | null;
+  } | null> } },
+): Promise<KonfigDonasiTampilan> {
+  try {
+    const cfg = await db.konfigurasiDonasi.findUnique({ where: { id: "utama" } });
+    if (cfg) {
+      return { ...cfg, dariDb: true };
+    }
+  } catch {
+    // DB tidak terjangkau / tabel belum di-push — pakai konstanta.
+  }
+  return {
+    bankNama: REKENING_DONASI[0]?.bank ?? "Bank resmi redaksi",
+    rekeningNomor: REKENING_DONASI[0]?.nomor ?? "-",
+    atasNama: REKENING_DONASI[0]?.atasNama ?? "Redaksi info Marhaen",
+    qrisUrl: QRIS_DONASI_SRC,
+    dariDb: false,
+  };
+}
+
 /** Tautan tujuan iklan harus http(s) absolut — cegah open-redirect & javascript:. */
 export function tautanIklanValid(url: string): boolean {
   try {

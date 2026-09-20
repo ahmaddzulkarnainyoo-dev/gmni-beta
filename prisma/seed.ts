@@ -262,8 +262,22 @@ const HALAMAN: Array<{ slug: string; judul: string; konten: string }> = [
     judul: "Hak Jawab",
     konten: `
 <h2>Hak Jawab</h2>
-<p>Setiap pihak yang merasa dirugikan oleh pemberitaan berhak mengajukan hak jawab sesuai peraturan perundang-undangan.</p>
-<p>[RAW TEXT MENYUSUL] Form pengajuan hak jawab akan tersedia di halaman ini pada Fase 1.</p>
+<p>Setiap pihak yang merasa dirugikan oleh pemberitaan di info Marhaen berhak mengajukan hak jawab sesuai Peraturan Dewan Pers No. 10/Reg/SUM/XII/2006 dan peraturan perundang-undangan yang berlaku.</p>
+<h3>Ketentuan Pengajuan</h3>
+<ul>
+<li>Pengajuan disampaikan maksimal <strong>14 (empat belas) hari</strong> sejak pemberitaan dimuat.</li>
+<li>Sertakan identitas jelas: nama, kontak (email/WhatsApp), dan tautan atau judul pemberitaan yang dipersoalkan.</li>
+<li>Uraikan dengan ringkas dan jelas bagian mana yang dianggap merugikan, disertai dasar/data pendukung.</li>
+<li>Isi hak jawab tidak boleh mengandung unsur fitnah, hasutan, ujaran kebencian, atau pelanggaran hukum lain.</li>
+</ul>
+<h3>Alur Penanganan</h3>
+<ul>
+<li><strong>1. Pengajuan</strong> — isi formulir hak jawab di halaman ini; pengajuan tercatat otomatis dan masuk antrian redaksi.</li>
+<li><strong>2. Tinjauan</strong> — redaksi memverifikasi identitas, objek berita, dan kelengkapan syarat.</li>
+<li><strong>3. Jawaban</strong> — bila diterima, hak jawab dimuat penuh dan tidak diolah (dipersingkat, diberi judul, atau diedit redaksi) paling lambat <strong>2×24 jam</strong> sejak pengajuan; bila ditolak, disampaikan alasannya.</li>
+</ul>
+<h3>Formulir Pengajuan</h3>
+<p>Gunakan formulir pengajuan hak jawab di bawah pada halaman ini. Untuk klarifikasi, koreksi, atau pengaduan lain, lihat halaman Kontak &amp; Pengaduan.</p>
 `,
   },
   {

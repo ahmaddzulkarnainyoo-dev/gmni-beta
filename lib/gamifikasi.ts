@@ -230,6 +230,10 @@ export type BarisPeringkat = {
   jumlahKomentar: number;
   /** True bila akun kader menyembunyikan profil (hanya diisi mode admin). */
   profilTersembunyi?: boolean;
+  /** Jumlah poin manual (AjusPoin) minggu berjalan yang tergabung di totalPoin. */
+  poinManual?: number;
+  /** True bila kader disembunyikan dari papan publik oleh Super Admin. */
+  disembunyikanPapan?: boolean;
   /** Nama role akun (dipakai panel audit untuk menandai tim redaksi/admin). */
   roleNama?: string;
 };
@@ -273,13 +277,15 @@ async function kumpulkanPeringkatMingguan(
   });
   if (ledger.length === 0) return [];
   const userIds = ledger.map((l) => l.userId);
-  const [pengguna, artikel, komentar] = await Promise.all([
+  const [pengguna, artikel, komentar, ajust] = await Promise.all([
     prisma.user.findMany({
       where: {
         id: { in: userIds },
         statusAkun: "AKTIF",
         // Panel admin boleh menyertakan kader berperil tersembunyi.
-        ...(sertakanTersembunyi ? {} : { profilTersembunyi: false }),
+        ...(sertakanTersembunyi
+          ? {}
+          : { profilTersembunyi: false, sembunyikanDariPapan: false }),
         // Papan kader murni: akun tim redaksi/admin tidak diikutkan.
         ...(sertakanAdmin ? {} : { role: { nama: { notIn: [...PERAN_ADMIN] } } }),
       },
@@ -290,6 +296,7 @@ async function kumpulkanPeringkatMingguan(
         fotoProfil: true,
         daerahAsal: true,
         profilTersembunyi: true,
+        sembunyikanDariPapan: true,
         role: { select: { nama: true } },
       },
     }),
@@ -309,26 +316,36 @@ async function kumpulkanPeringkatMingguan(
       where: { penulisId: { in: userIds }, status: "TAMPIL", tanggal: { gte: awal, lt: akhir } },
       _count: { _all: true },
     }),
+    // Poin manual Super Admin (AjusPoin) minggu berjalan — dijumlahkan.
+    prisma.ajusPoin.groupBy({
+      by: ["userId"],
+      where: { userId: { in: userIds }, createdAt: { gte: awal, lt: akhir } },
+      _sum: { poin: true },
+    }),
   ]);
   const petaPengguna = new Map(pengguna.map((u) => [u.id, u]));
   const petaArtikel = new Map(artikel.map((a) => [a.penulisId, a._count._all]));
   const petaKomentar = new Map(
     komentar.filter((k) => k.penulisId).map((k) => [k.penulisId as string, k._count._all]),
   );
+  const petaAjus = new Map(ajust.map((a) => [a.userId, a._sum.poin ?? 0]));
   const baris: BarisPeringkat[] = [];
   for (const l of ledger) {
     const u = petaPengguna.get(l.userId);
     if (!u) continue;
+    const poinManual = petaAjus.get(u.id) ?? 0;
     baris.push({
       userId: u.id,
       namaLengkap: u.namaLengkap,
       username: u.username,
       fotoProfil: u.fotoProfil,
       daerahAsal: u.daerahAsal,
-      totalPoin: l._sum.poin ?? 0,
+      totalPoin: (l._sum.poin ?? 0) + poinManual,
+      poinManual,
       jumlahArtikel: petaArtikel.get(u.id) ?? 0,
       jumlahKomentar: petaKomentar.get(u.id) ?? 0,
       profilTersembunyi: (u as { profilTersembunyi?: boolean }).profilTersembunyi ?? false,
+      disembunyikanPapan: (u as { sembunyikanDariPapan?: boolean }).sembunyikanDariPapan ?? false,
       roleNama: u.role.nama,
     });
     if (baris.length >= batas) break;
@@ -434,6 +451,7 @@ export async function ambilRingkasanKader(userId: string): Promise<{
             id: { in: kandidat },
             statusAkun: "AKTIF",
             profilTersembunyi: false,
+            sembunyikanDariPapan: false,
             role: { nama: { notIn: [...PERAN_ADMIN] } },
           },
         });

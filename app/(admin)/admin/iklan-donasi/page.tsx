@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { KickerLabel } from "@/components/ui/KickerLabel";
 import { PanelIklan } from "@/components/admin/PanelIklan";
 import { PanelDonasi } from "@/components/admin/PanelDonasi";
+import { PanelKonfigDonasi } from "@/components/admin/PanelKonfigDonasi";
+import { ambilKonfigurasiDonasi } from "@/lib/monetisasi";
 
 export const metadata: Metadata = { title: "Iklan & Donasi" };
 export const dynamic = "force-dynamic";
@@ -11,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default async function HalamanIklanDonasi() {
   await requireRole("Super Admin", "Editor");
 
-  const [iklan, donasi, agregat] = await Promise.all([
+  const [iklan, donasi, agregat, konfigDonasi] = await Promise.all([
     prisma.iklan.findMany({
       orderBy: [{ lokasiSlot: "asc" }, { urutan: "asc" }, { createdAt: "desc" }],
     }),
@@ -25,6 +27,7 @@ export default async function HalamanIklanDonasi() {
       _count: { _all: true },
       _sum: { nominal: true },
     }),
+    ambilKonfigurasiDonasi(prisma),
   ]);
 
   const hitung = (s: string) => agregat.find((a) => a.status === s)?._count._all ?? 0;
@@ -59,6 +62,15 @@ export default async function HalamanIklanDonasi() {
             jumlahKlik: i.jumlahKlik,
           }))}
         />
+      </section>
+
+      <section aria-label="Konfigurasi rekening donasi" className="mt-6">
+        <h2 className="font-serif text-xl font-bold text-hitam-900">Rekening &amp; QRIS Resmi</h2>
+        <p className="mt-1 text-sm text-hitam-500">
+          Nilai ini tampil di halaman publik /donasi — menggantikan konstanta
+          placeholder di kode. Perubahan tercatat di log audit.
+        </p>
+        <PanelKonfigDonasi awal={konfigDonasi} />
       </section>
 
       <section aria-label="Donasi" className="mt-6">

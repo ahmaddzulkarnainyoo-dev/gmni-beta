@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import Link from "next/link";
 import { requireRole } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 import { amanAsync } from "@/lib/kueri-aman";
+import { fmtTanggal } from "@/lib/articles";
 import {
   ambilPeringkatMingguan,
   awalMingguBerjalan,
   labelPeriodeMingguan,
   PERAN_ADMIN,
 } from "@/lib/gamifikasi";
+import { AksiPeringkat } from "@/components/admin/AksiPeringkat";
 
 export const metadata: Metadata = { title: "Kelola Leaderboard" };
 export const dynamic = "force-dynamic";
@@ -20,14 +24,19 @@ export const dynamic = "force-dynamic";
 export default async function HalamanLeaderboardAdmin() {
   await requireRole("Super Admin", "Editor");
 
-  const [baris, gagalMemuat] = await amanAsync(
+  const [baris, riwayatAjus, gagalMemuat] = await amanAsync(
     () =>
       Promise.all([
         // Panel audit: sertakan kader tersembunyi + akun tim redaksi/admin.
         ambilPeringkatMingguan(25, { sertakanTersembunyi: true, sertakanAdmin: true }),
+        prisma.ajusPoin.findMany({
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          include: { user: { select: { namaLengkap: true } } },
+        }),
         Promise.resolve(false),
       ]),
-    [[], true],
+    [[], [], true],
   );
 
   const periode = labelPeriodeMingguan();
@@ -88,14 +97,17 @@ export default async function HalamanLeaderboardAdmin() {
                   Komentar
                 </th>
                 <th className="px-3 py-2.5 text-right font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-700">
+                  Manual
+                </th>
+                <th className="px-3 py-2.5 text-right font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-700">
                   Poin
                 </th>
               </tr>
             </thead>
             <tbody>
               {baris.map((b, i) => (
+                <Fragment key={b.userId}>
                 <tr
-                  key={b.userId}
                   className={i > 0 ? "border-t border-hitam-100" : undefined}
                 >
                   <td className="px-3 py-2.5 font-mono text-[13px] font-bold text-hitam-900">
@@ -125,10 +137,25 @@ export default async function HalamanLeaderboardAdmin() {
                   <td className="px-3 py-2.5 text-right font-mono text-[13px] text-hitam-700">
                     {b.jumlahKomentar}
                   </td>
+                  <td className="px-3 py-2.5 text-right font-mono text-[13px] text-hitam-500">
+                    {(b.poinManual ?? 0) > 0 ? `+${b.poinManual}` : (b.poinManual ?? 0) < 0 ? b.poinManual : "—"}
+                  </td>
                   <td className="px-3 py-2.5 text-right font-mono text-[13px] font-bold text-gmnimerah-700">
                     {b.totalPoin}
                   </td>
                 </tr>
+                {b.roleNama && !PERAN_ADMIN.includes(b.roleNama) && (
+                  <tr>
+                    <td colSpan={6} className="border-t border-hitam-100 bg-kertas-100/60 px-3 pb-3">
+                      <AksiPeringkat
+                        userId={b.userId}
+                        namaLengkap={b.namaLengkap}
+                        disembunyikanPapan={b.disembunyikanPapan === true}
+                      />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -136,13 +163,37 @@ export default async function HalamanLeaderboardAdmin() {
       )}
 
       <p className="mt-4 text-sm text-hitam-500">
-        Catatan: fitur pemilihan pemenang manual &ldquo;Penulis Terbaik&rdquo;
-        diaktifkan pada sub-fase lanjutan. Lihat papan publik di{" "}
+        Catatan: penyesuaian poin manual (±) dijumlahkan dengan poin aktivitas
+        sistem pada papan minggu berjalan; kader yang disembunyikan tidak tampil
+        di papan publik namun tetap terlihat di panel ini. Lihat papan publik di{" "}
         <Link href="/leaderboard" className="font-bold text-gmnimerah-600 hover:underline">
           /leaderboard
         </Link>
         .
       </p>
+
+      {riwayatAjus.length > 0 && (
+        <section aria-label="Riwayat penyesuaian poin" className="mt-8">
+          <h2 className="font-serif text-lg font-bold text-hitam-900">
+            Riwayat Penyesuaian Poin (10 terakhir)
+          </h2>
+          <ul className="mt-3 divide-y divide-hitam-100 border-2 border-hitam-900 bg-white">
+            {riwayatAjus.map((r) => (
+              <li key={r.id} className="flex items-baseline justify-between gap-3 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-hitam-900">
+                    {r.user?.namaLengkap ?? "(kader terhapus)"} — {r.poin > 0 ? `+${r.poin}` : r.poin} poin
+                  </p>
+                  <p className="truncate text-xs text-hitam-500">{r.alasan}</p>
+                </div>
+                <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-hitam-400">
+                  {fmtTanggal(r.createdAt)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { KickerLabel } from "@/components/ui/KickerLabel";
 import { FormDonasi } from "@/components/publik/FormDonasi";
-import { QRIS_DONASI_SRC, REKENING_DONASI, fmtRupiah } from "@/lib/monetisasi";
+import { ambilKonfigurasiDonasi, fmtRupiah } from "@/lib/monetisasi";
 import { fmtTanggal } from "@/lib/articles";
 
 export const metadata: Metadata = {
@@ -20,6 +20,7 @@ export default async function HalamanDonasi() {
     createdAt: Date;
   }> = [];
   let totalNominal = 0;
+  let konfig: Awaited<ReturnType<typeof ambilKonfigurasiDonasi>> | null = null;
   try {
     donasi = await prisma.donasi.findMany({
       where: { status: "TERVERIFIKASI" },
@@ -32,8 +33,10 @@ export default async function HalamanDonasi() {
       _sum: { nominal: true },
     });
     totalNominal = agregat._sum.nominal ?? 0;
+    konfig = await ambilKonfigurasiDonasi(prisma);
   } catch {
     donasi = [];
+    konfig = await ambilKonfigurasiDonasi(prisma);
   }
 
   return (
@@ -54,24 +57,22 @@ export default async function HalamanDonasi() {
         <section aria-label="Kanal donasi resmi">
           <KickerLabel>Langkah 1 — Transfer</KickerLabel>
           <div className="mt-3 border-2 border-hitam-900 bg-white p-5">
-            {REKENING_DONASI.map((r) => (
-              <div key={r.nomor} className="border-b border-hitam-100 pb-4">
-                <p className="font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-500">
-                  {r.bank}
-                </p>
-                <p className="mt-1 font-mono text-2xl font-bold tracking-wide text-hitam-900">
-                  {r.nomor}
-                </p>
-                <p className="mt-1 text-sm text-hitam-600">a.n. {r.atasNama}</p>
-              </div>
-            ))}
+            <div className="border-b border-hitam-100 pb-4">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-500">
+                {konfig.bankNama}
+              </p>
+              <p className="mt-1 font-mono text-2xl font-bold tracking-wide text-hitam-900">
+                {konfig.rekeningNomor}
+              </p>
+              <p className="mt-1 text-sm text-hitam-600">a.n. {konfig.atasNama}</p>
+            </div>
             <div className="mt-4 pt-4 text-center">
               <p className="font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-500">
                 Atau pindai QRIS
               </p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={QRIS_DONASI_SRC}
+                src={konfig.qrisUrl ?? "/qris-donasi.png"}
                 alt="Kode QRIS donasi pers Marhaen"
                 className="mx-auto mt-2 h-48 w-48 border-2 border-hitam-900 object-contain"
               />

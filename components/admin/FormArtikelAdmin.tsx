@@ -98,6 +98,7 @@ export function FormArtikelAdmin({
   const [memuat, setMemuat] = useState(false);
   const [mengunggah, setMengunggah] = useState(false);
   const [eror, setEror] = useState<string | null>(null);
+const [bukaPratinjau, setBukaPratinjau] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const [erorUnggah, setErorUnggah] = useState<string | null>(null);
 
@@ -533,12 +534,69 @@ export function FormArtikelAdmin({
         </button>
         <button
           type="button"
+          onClick={() => setBukaPratinjau(true)}
+          className="border-2 border-hitam-900 bg-white px-6 py-3 font-sans text-sm font-bold uppercase tracking-wide text-hitam-900 transition-colors hover:bg-kertas-200"
+        >
+          Pratinjau
+        </button>
+        <button
+          type="button"
           onClick={() => router.push("/admin/artikel")}
           className="border-2 border-hitam-900 px-6 py-3 font-sans text-sm font-bold uppercase tracking-wide text-hitam-900 transition-colors hover:bg-kertas-200"
         >
           Batal
         </button>
       </div>
+
+      {bukaPratinjau && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-hitam-900/60 p-4 md:p-8"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setBukaPratinjau(false);
+          }}
+        >
+          <div className="mx-auto max-w-3xl border-4 border-hitam-900 bg-kertas-50 p-6 md:p-10">
+            <div className="mb-4 flex items-center justify-between border-b-2 border-hitam-900 pb-3">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-hitam-500">
+                Pratinjau Tampilan Publik (belum tersimpan)
+              </span>
+              <button
+                type="button"
+                onClick={() => setBukaPratinjau(false)}
+                aria-label="Tutup pratinjau"
+                className="font-mono text-sm font-bold text-hitam-500 hover:text-hitam-900"
+              >
+                ✕
+              </button>
+            </div>
+            <article>
+              <h1 className="font-serif text-3xl font-extrabold leading-tight text-hitam-900 md:text-4xl">
+                {judul || "(tanpa judul)"}
+              </h1>
+              {ringkasan.trim() && (
+                <p className="mt-3 border-l-4 border-gmnimerah-500 pl-3 font-serif text-base italic text-hitam-600">
+                  {ringkasan}
+                </p>
+              )}
+              <div
+                className="konten-artikel mt-6"
+                dangerouslySetInnerHTML={{ __html: mdKeHtml(konten) }}
+              />
+            </article>
+            <div className="mt-6 flex justify-end border-t-2 border-hitam-100 pt-3">
+              <button
+                type="button"
+                onClick={() => setBukaPratinjau(false)}
+                className="border-2 border-hitam-900 bg-white px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 hover:bg-kertas-200"
+              >
+                Tutup Pratinjau
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
