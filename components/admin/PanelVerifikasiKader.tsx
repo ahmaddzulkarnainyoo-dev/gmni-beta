@@ -11,6 +11,8 @@ type PendaftarData = {
   nim: string | null;
   username: string;
   cabangKomisariat: string | null;
+  cabangDpc: string | null;
+  komisariat: string | null;
   tanggalBergabung: string;
 };
 
@@ -143,7 +145,9 @@ export function PanelVerifikasiKader({
                 NIM {u.nim ?? "—"}
               </p>
               <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-hitam-500">
-                {u.cabangKomisariat ?? "Cabang belum diisi"}
+                {u.cabangDpc ?? "—"}
+                <span className="text-hitam-400"> · </span>
+                {u.komisariat ?? u.cabangKomisariat ?? "Cabang belum diisi"}
               </p>
               <p className="font-mono text-[11px] uppercase tracking-wider text-hitam-400">
                 Mendaftar {formatTanggal(u.tanggalBergabung)}
@@ -157,7 +161,7 @@ export function PanelVerifikasiKader({
             <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
               <button
                 type="button"
-                disabled={memuat[u.id] !== ""}
+                disabled={!!memuat[u.id]}
                 onClick={() => putuskan(u.id, "AKTIF")}
                 className="inline-flex min-h-11 items-center justify-center gap-2 bg-gmnimerah-500 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-gmnimerah-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -166,7 +170,7 @@ export function PanelVerifikasiKader({
               </button>
               <button
                 type="button"
-                disabled={memuat[u.id] !== ""}
+                disabled={!!memuat[u.id]}
                 onClick={() =>
                   putuskan(u.id, "SUSPEND", `Tolak pendaftaran ${u.namaLengkap}? Akun diset SUSPEND.`)
                 }
@@ -177,7 +181,7 @@ export function PanelVerifikasiKader({
               </button>
               <button
                 type="button"
-                disabled={memuat[u.id] !== ""}
+                disabled={!!memuat[u.id]}
                 onClick={() => hapus(u.id, u.namaLengkap)}
                 className="inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-gmnimerah-700 transition-colors hover:bg-gmnimerah-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               >

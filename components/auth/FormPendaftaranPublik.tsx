@@ -17,7 +17,8 @@ export function FormPendaftaranPublik({ tokenTidakSah }: { tokenTidakSah: boolea
   const [nim, setNim] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [cabangKomisariat, setCabangKomisariat] = useState("");
+  const [cabangDpc, setCabangDpc] = useState("");
+  const [komisariat, setKomisariat] = useState("");
   const [sandi, setSandi] = useState("");
   const [konfirmasi, setKonfirmasi] = useState("");
   const [memuat, setMemuat] = useState(false);
@@ -36,7 +37,7 @@ export function FormPendaftaranPublik({ tokenTidakSah }: { tokenTidakSah: boolea
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ namaLengkap, nim, username, email, password: sandi, cabangKomisariat }),
+        body: JSON.stringify({ namaLengkap, nim, username, email, password: sandi, cabangDpc, komisariat }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
@@ -161,19 +162,34 @@ export function FormPendaftaranPublik({ tokenTidakSah }: { tokenTidakSah: boolea
         />
       </label>
 
-      <label className="block">
-        <span className={LABEL}>Cabang / Komisariat</span>
-        <input
-          type="text"
-          required
-          minLength={3}
-          maxLength={120}
-          value={cabangKomisariat}
-          onChange={(e) => setCabangKomisariat(e.target.value)}
-          className={INPUT}
-          placeholder="mis. DPC Surabaya / Komisariat FISIP Unair"
-        />
-      </label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className={LABEL}>Cabang (DPC)</span>
+          <input
+            type="text"
+            required
+            minLength={3}
+            maxLength={100}
+            value={cabangDpc}
+            onChange={(e) => setCabangDpc(e.target.value)}
+            className={INPUT}
+            placeholder="mis. DPC Surabaya"
+          />
+        </label>
+        <label className="block">
+          <span className={LABEL}>Komisariat</span>
+          <input
+            type="text"
+            required
+            minLength={3}
+            maxLength={120}
+            value={komisariat}
+            onChange={(e) => setKomisariat(e.target.value)}
+            className={INPUT}
+            placeholder="mis. Komisariat FISIP Unair"
+          />
+        </label>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">

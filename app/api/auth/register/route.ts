@@ -30,9 +30,10 @@ function validasiPendaftaran(
   username: string | undefined,
   email: string | undefined,
   password: string,
-  cabangKomisariat: string | undefined,
+  komisariat: string | undefined,
+  cabangDpc: string | undefined,
 ): string | null {
-  if (!namaLengkap || !nim || !username || !email || !password || !cabangKomisariat) {
+  if (!namaLengkap || !nim || !username || !email || !password || !komisariat) {
     return "Data pendaftaran tidak lengkap. Isi seluruh kolom.";
   }
   if (!/^[A-Z0-9]{5,20}$/.test(nim)) {
@@ -50,8 +51,11 @@ function validasiPendaftaran(
   if (password.length < 12) {
     return "Sandi minimal 12 karakter demi keamanan kader.";
   }
-  if (cabangKomisariat.length < 3 || cabangKomisariat.length > 120) {
-    return "Cabang/komisariat 3-120 karakter.";
+  if (komisariat.length < 3 || komisariat.length > 120) {
+    return "Komisariat 3-120 karakter.";
+  }
+  if (cabangDpc && (cabangDpc.length < 3 || cabangDpc.length > 100)) {
+    return "Cabang (DPC) 3-100 karakter.";
   }
   return null;
 }
@@ -89,7 +93,9 @@ export async function POST(request: Request) {
       username?: string;
       email?: string;
       password?: string;
-      cabangKomisariat?: string;
+      cabangDpc?: string;
+      komisariat?: string;
+      cabangKomisariat?: string; // legacy (form lama, satu field gabungan)
     };
 
     const token = body.token?.trim() || null;
@@ -98,7 +104,23 @@ export async function POST(request: Request) {
     const username = body.username?.trim();
     const email = body.email?.trim().toLowerCase();
     const password = body.password ?? "";
-    const cabangKomisariat = body.cabangKomisariat?.trim();
+
+    // Backfill data lama (Q-audit 1): pemisahan cabang/komisariat. Form baru
+    // mengirim dua field; form lama (invite legacy) mengirim satu gabungan
+    // "DPC X / Komisariat Y" — dipilah otomatis ke dua kolom baru.
+    let cabangDpc = body.cabangDpc?.trim() || "";
+    let komisariat = body.komisariat?.trim() || "";
+    const gabunganLama = body.cabangKomisariat?.trim() || "";
+    if (gabunganLama && (!cabangDpc || !komisariat)) {
+      const bagian = gabunganLama
+        .split("/")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (!cabangDpc && bagian.length >= 2) cabangDpc = bagian[0];
+      if (!komisariat) {
+        komisariat = bagian.length >= 2 ? bagian.slice(1).join(" / ") : bagian[0] ?? "";
+      }
+    }
 
     const erorValidasi = validasiPendaftaran(
       namaLengkap,
@@ -106,14 +128,18 @@ export async function POST(request: Request) {
       username,
       email,
       password,
-      cabangKomisariat,
+      komisariat,
+      cabangDpc,
     );
-    if (erorValidasi || !namaLengkap || !nim || !username || !email || !cabangKomisariat) {
+    if (erorValidasi || !namaLengkap || !nim || !username || !email || !komisariat) {
       return NextResponse.json(
         { error: erorValidasi ?? "Data pendaftaran tidak lengkap." },
         { status: 400 },
       );
     }
+
+    // Kolom legacy tetap disinkronkan agar tampilan lama tidak kosong.
+    const cabangKomisariat = [cabangDpc, komisariat].filter(Boolean).join(" / ");
 
     if (!lewatBatas(alamatIpDari(request))) {
       return NextResponse.json(
@@ -186,6 +212,8 @@ export async function POST(request: Request) {
             email,
             passwordHash,
             cabangKomisariat,
+            cabangDpc: cabangDpc || null,
+            komisariat,
             roleId: role.id,
             diundangOlehId: pengundang.id,
           },
@@ -216,6 +244,8 @@ export async function POST(request: Request) {
         email,
         passwordHash,
         cabangKomisariat,
+        cabangDpc: cabangDpc || null,
+        komisariat,
         roleId: role.id,
         statusAkun: "PENDING",
       },
@@ -227,7 +257,7 @@ export async function POST(request: Request) {
           aksi: "user.daftar_pending",
           entitasTipe: "User",
           entitasId: kader.id,
-          dataSesudah: { nim, email, username, cabangKomisariat },
+          dataSesudah: { nim, email, username, cabangDpc: cabangDpc || null, komisariat },
         },
       })
       .catch(() => undefined);

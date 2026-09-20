@@ -121,7 +121,9 @@ model User {
   fotoProfil        String? /// URL ke object storage (Vercel Blob/Cloudinary)
   bio               String? @db.Text
   daerahAsal        String? /// nama daerah/DPC asal
-  cabangKomisariat String? /// cabang/komisariat kader (form pendaftaran publik)
+  cabangKomisariat String? /// LEGACY: gabungan cabang/komisariat (form lama) — jangan diisi baru
+  cabangDpc        String? /// DPC — cabang kota/kabupaten (form pendaftaran baru, dipisah dari komisariat)
+  komisariat       String? /// Komisariat — kampus/sekolah/fakultas (form pendaftaran baru)
   roleId            String
   role              Role     @relation(fields: [roleId], references: [id])
   statusAkun        StatusAkun @default(AKTIF)

@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { htmlKeMd, mdKeHtml } from "@/lib/markdown";
+import { idYoutube, sisipAtKursor } from "@/lib/editor-util";
 import type { StatusArtikel, VisibilitasPenulis } from "@prisma/client";
 
 /**
@@ -85,12 +86,75 @@ export function FormArtikel({
   const [memuat, setMemuat] = useState(false);
   const [eror, setEror] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [unggahGambar, setUnggahGambar] = useState(false);
+  const kontenRef = useRef<HTMLTextAreaElement>(null);
+  const unggahGambarRef = useRef<HTMLInputElement>(null);
 
   const pratinjauHtml = useMemo(() => mdKeHtmlAman(konten), [konten]);
 
   function sisip(teks: string) {
     setKonten((k) => (k.length === 0 ? teks : `${k}\n\n${teks}`));
     setPratinjau(false);
+  }
+
+  /** Sisip teks Markdown tepat pada kursor textarea isi artikel. */
+  function sisipKursor(teks: string) {
+    const ta = kontenRef.current;
+    if (!ta) {
+      sisip(teks);
+      return;
+    }
+    const hasil = sisipAtKursor(ta, konten, teks);
+    setKonten(hasil.nilai);
+    setPratinjau(false);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(hasil.posisi, hasil.posisi);
+    });
+  }
+
+  /** Unggah gambar isi artikel (maks 2 MB) lalu sisip Markdown pada kursor. */
+  async function unggahGambarKonten(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUnggahGambar(true);
+    setEror(null);
+    setInfo(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("jenis", "artikel");
+      const res = await fetch("/api/media", { method: "POST", body: fd });
+      const data = (await res.json()) as { ok?: boolean; url?: string; error?: string };
+      if (!res.ok || !data.ok || !data.url) {
+        setEror(data.error ?? "Upload gagal. Coba gambar lain (maks 2 MB).");
+        return;
+      }
+      sisipKursor(`\n![${file.name.replace(/\.[a-z0-9]+$/i, "")}](${data.url})\n`);
+      setInfo("Gambar tersisip ke isi artikel (lihat Pratinjau).");
+    } catch {
+      setEror("Tidak dapat menghubungi server untuk upload.");
+    } finally {
+      setUnggahGambar(false);
+    }
+  }
+
+  /** Sisip video YouTube berupa token :::youtube <ID>::: pada kursor. */
+  function sisipVideo() {
+    const masukan = window.prompt(
+      "Tempel URL atau ID video YouTube:",
+      "https://www.youtube.com/watch?v=",
+    );
+    if (!masukan) return;
+    const id = idYoutube(masukan);
+    if (!id) {
+      setEror("URL/ID video YouTube tidak dikenali.");
+      return;
+    }
+    sisipKursor(`\n:::youtube ${id}:::\n`);
+    setEror(null);
+    setInfo("Sisipan video YouTube ditambahkan.");
   }
 
   function toggleTag(id: string) {
@@ -222,27 +286,59 @@ export function FormArtikel({
             <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
               Isi Tulisan (Markdown)
             </span>
-            <div className="flex gap-1">
-              {["## ", "- ", "**teks**", "> "].map((t) => (
+            <div className="flex flex-wrap gap-1">
+              {[
+                { teks: "## ", label: "H2" },
+                { teks: "- ", label: "List" },
+                { teks: "**teks**", label: "Bold" },
+                { teks: "_teks_", label: "Miring" },
+                { teks: "> ", label: "Kutipan" },
+                { teks: "\n\n---\n\n", label: "Pemisah" },
+              ].map((s) => (
                 <button
-                  key={t}
+                  key={s.label}
                   type="button"
-                  onClick={() => sisip(t)}
+                  onClick={() => sisip(s.teks)}
                   className="border border-hitam-300 bg-kertas-100 px-2 py-1 font-mono text-[11px] text-hitam-700 transition-colors hover:border-gmnimerah-500 hover:bg-gmnimerah-50"
                 >
-                  {t.trim() || "..."}
+                  {s.label}
                 </button>
               ))}
+              <button
+                type="button"
+                disabled={unggahGambar}
+                onClick={() => unggahGambarRef.current?.click()}
+                className="border border-gmnimerah-500 bg-kertas-100 px-2 py-1 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:bg-gmnimerah-50 disabled:opacity-50"
+              >
+                {unggahGambar ? "Mengunggah..." : "Gambar"}
+              </button>
+              <button
+                type="button"
+                onClick={sisipVideo}
+                className="border border-gmnimerah-500 bg-kertas-100 px-2 py-1 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:bg-gmnimerah-50"
+              >
+                Video
+              </button>
             </div>
           </div>
           <textarea
             required
             minLength={40}
             rows={18}
+            ref={kontenRef}
             value={konten}
             onChange={(e) => setKonten(e.target.value)}
             className="w-full resize-y border-2 border-hitam-900 bg-white px-3 py-3 font-mono text-[13px] leading-relaxed text-hitam-900 outline-none transition-colors focus:border-gmnimerah-500"
-            placeholder={"Gunakan Markdown:\n## Judul Bagian\n\nParagraf pembuka...\n\n- poin pertama\n- poin kedua\n\n**teks tebal** atau _teks miring_"}
+            placeholder={"Gunakan Markdown:\n## Judul Bagian\n\nParagraf pembuka...\n\n- poin pertama\n- poin kedua\n\n**teks tebal** atau _teks miring_\n\nSisip media: ![keterangan](url-gambar) atau :::youtube ID-VIDEO:::"}
+          />
+          <input
+            ref={unggahGambarRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            onChange={unggahGambarKonten}
+            className="hidden"
+            aria-hidden
+            tabIndex={-1}
           />
         </div>
       )}

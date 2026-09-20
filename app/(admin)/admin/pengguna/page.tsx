@@ -22,6 +22,9 @@ export default async function HalamanPenggunaAdmin() {
         username: true,
         statusAkun: true,
         tokenUndangan: true,
+        cabangKomisariat: true,
+        cabangDpc: true,
+        komisariat: true,
         tanggalBergabung: true,
         role: { select: { id: true, nama: true } },
         diundangOleh: { select: { email: true } },
@@ -37,6 +40,8 @@ export default async function HalamanPenggunaAdmin() {
         nim: true,
         username: true,
         cabangKomisariat: true,
+        cabangDpc: true,
+        komisariat: true,
         tanggalBergabung: true,
       },
     }),
@@ -59,6 +64,9 @@ export default async function HalamanPenggunaAdmin() {
     roleNama: u.role.nama,
     tokenUndangan: u.tokenUndangan,
     diundangOlehEmail: u.diundangOleh?.email ?? null,
+    cabangKomisariat: u.cabangKomisariat,
+    cabangDpc: u.cabangDpc,
+    komisariat: u.komisariat,
     tanggalBergabung: u.tanggalBergabung.toISOString(),
   }));
 
@@ -69,6 +77,8 @@ export default async function HalamanPenggunaAdmin() {
     nim: u.nim,
     username: u.username,
     cabangKomisariat: u.cabangKomisariat,
+    cabangDpc: u.cabangDpc,
+    komisariat: u.komisariat,
     tanggalBergabung: u.tanggalBergabung.toISOString(),
   }));
 

@@ -104,8 +104,44 @@ export function TabelArtikelAdmin({
     }
   }
 
+  /** ACC/publish langsung (→ TERBIT) atau pulihkan dari arsip (→ DRAFT). */
+  async function ubahStatus(a: BarisArtikel, status: StatusArtikel) {
+    const konfirmasi =
+      status === "TERBIT"
+        ? `ACC & terbitkan "${a.judul}" sekarang? Artikel langsung tampil publik.`
+        : `Pulihkan "${a.judul}" dari arsip ke draf?`;
+    if (!confirm(konfirmasi)) return;
+    setMemuat(a.id);
+    setEror(null);
+    try {
+      const res = await fetch(`/api/admin/artikel/${a.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setEror(data.error ?? "Gagal mengubah status artikel.");
+        return;
+      }
+      router.refresh();
+    } catch {
+      setEror("Tidak dapat menghubungi server.");
+    } finally {
+      setMemuat(null);
+    }
+  }
+
   return (
     <div className="mt-6">
+      {eror && (
+        <p
+          role="alert"
+          className="mb-4 border-2 border-gmnimerah-500 bg-gmnimerah-50 px-4 py-2.5 text-sm font-semibold text-gmnimerah-700"
+        >
+          {eror}
+        </p>
+      )}
       <form
         onSubmit={terapkan}
         className="flex flex-wrap items-end gap-3 border-2 border-hitam-900 bg-kertas-100 p-4"
@@ -243,6 +279,26 @@ export function TabelArtikelAdmin({
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex justify-end gap-1.5">
+                      {a.status !== "TERBIT" && a.status !== "DIARSIPKAN" && (
+                        <button
+                          type="button"
+                          disabled={memuat === a.id}
+                          onClick={() => ubahStatus(a, "TERBIT")}
+                          className="border border-gmnimerah-500 bg-gmnimerah-500 px-2 py-1 font-mono text-[10px] font-bold uppercase text-white transition-colors hover:bg-gmnimerah-700 disabled:opacity-40"
+                        >
+                          {memuat === a.id ? "…" : "ACC"}
+                        </button>
+                      )}
+                      {a.status === "DIARSIPKAN" && (
+                        <button
+                          type="button"
+                          disabled={memuat === a.id}
+                          onClick={() => ubahStatus(a, "DRAFT")}
+                          className="border border-hitam-900 px-2 py-1 font-mono text-[10px] font-bold uppercase text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white disabled:opacity-40"
+                        >
+                          {memuat === a.id ? "…" : "Pulihkan"}
+                        </button>
+                      )}
                       <Link
                         href={`/admin/artikel/${a.id}/edit`}
                         className="border border-hitam-900 px-2 py-1 font-mono text-[10px] font-bold uppercase text-hitam-900 transition-colors hover:bg-kertas-200"

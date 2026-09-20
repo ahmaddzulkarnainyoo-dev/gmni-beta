@@ -15,6 +15,9 @@ type PenggunaData = {
   roleNama: string;
   tokenUndangan: string | null;
   diundangOlehEmail: string | null;
+  cabangKomisariat: string | null;
+  cabangDpc: string | null;
+  komisariat: string | null;
   tanggalBergabung: string | null;
 };
 
@@ -210,7 +213,7 @@ export function PanelPengguna({
                     <span className="sr-only">Ubah peran {u.namaLengkap}</span>
                     <select
                       value={u.roleId}
-                      disabled={memuat[u.id] !== ""}
+                      disabled={!!memuat[u.id]}
                       onChange={(e) => gantiPeran(u, e.target.value)}
                       className="mt-1 max-w-[220px] border border-hitam-900 bg-white px-2 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-hitam-900 disabled:opacity-50"
                     >
@@ -235,6 +238,13 @@ export function PanelPengguna({
               <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wider text-hitam-500">
                 NIM {u.nim ?? "—"}
               </p>
+              {(u.cabangDpc || u.komisariat || u.cabangKomisariat) && (
+                <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wider text-hitam-400">
+                  {[u.cabangDpc, u.komisariat ?? u.cabangKomisariat]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
               {u.diundangOlehEmail && (
                 <p className="font-mono text-[11px] uppercase tracking-wider text-hitam-400">
                   Diundang oleh {u.diundangOlehEmail}
@@ -270,12 +280,39 @@ export function PanelPengguna({
               )}
             </div>
             <div className="flex shrink-0 flex-col items-end gap-2">
+              {bisaSuspend && (u.statusAkun === "AKTIF" || u.statusAkun === "SUSPEND") && (
+                <button
+                  type="button"
+                  disabled={!!memuat[u.id]}
+                  onClick={() => {
+                    const tangguhkan = u.statusAkun === "AKTIF";
+                    if (
+                      !window.confirm(
+                        tangguhkan
+                          ? `Tangguhkan akun ${u.namaLengkap}? Kader tidak dapat masuk selama ditangguhkan.`
+                          : `Pulihkan akun ${u.namaLengkap}? Kader dapat masuk kembali lewat NIM.`,
+                      )
+                    ) {
+                      return;
+                    }
+                    gantiStatus(u);
+                  }}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 border-2 border-hitam-900 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {memuat[u.id] === "suspend" && <Spinner className="h-3.5 w-3.5" />}
+                  {memuat[u.id] === "suspend"
+                    ? "Memproses..."
+                    : u.statusAkun === "AKTIF"
+                      ? "Tangguhkan"
+                      : "Pulihkan"}
+                </button>
+              )}
               {bisaSuspend && (
                 <button
                   type="button"
-                  disabled={memuat[u.id] !== ""}
+                  disabled={!!memuat[u.id]}
                   onClick={() => buatTautanPemulihan(u)}
-                  className="inline-flex items-center justify-center gap-2 border-2 border-hitam-900 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 border-2 border-hitam-900 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {memuat[u.id] === "pemulihan" && <Spinner className="h-3.5 w-3.5" />}
                   {memuat[u.id] === "pemulihan"
@@ -286,9 +323,9 @@ export function PanelPengguna({
               {bisaSuspend && (
                 <button
                   type="button"
-                  disabled={memuat[u.id] !== ""}
+                  disabled={!!memuat[u.id]}
                   onClick={() => hapusAkun(u)}
-                  className="inline-flex items-center justify-center gap-2 border-2 border-hitam-900 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-gmnimerah-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 border-2 border-hitam-900 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-gmnimerah-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {memuat[u.id] === "hapus" && <Spinner className="h-3.5 w-3.5" />}
                   {memuat[u.id] === "hapus" ? "Menghapus..." : "Hapus"}

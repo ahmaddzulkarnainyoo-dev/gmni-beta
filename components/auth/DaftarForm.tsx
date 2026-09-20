@@ -15,7 +15,8 @@ export function DaftarForm({
   const [nim, setNim] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [cabang, setCabang] = useState("");
+  const [cabangDpc, setCabangDpc] = useState("");
+  const [komisariat, setKomisariat] = useState("");
   const [sandi, setSandi] = useState("");
   const [konfirmasi, setKonfirmasi] = useState("");
   const [memuat, setMemuat] = useState(false);
@@ -34,7 +35,7 @@ export function DaftarForm({
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, namaLengkap, nim, username, email, password: sandi, cabangKomisariat: cabang }),
+        body: JSON.stringify({ token, namaLengkap, nim, username, email, password: sandi, cabangDpc, komisariat }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
@@ -121,7 +122,7 @@ export function DaftarForm({
           placeholder="mis. 20211012345"
         />
         <span className="mt-1 block text-xs text-hitam-500">
-          NIM menjadi identitas masuk kader — email hanya untuk pemulihan sandi.
+          NIM menjadi identitas masuk kader â€” email hanya untuk pemulihan sandi.
         </span>
       </label>
 
@@ -157,21 +158,38 @@ export function DaftarForm({
         />
       </label>
 
-      <label className="block">
-        <span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
-          Cabang / Komisariat
-        </span>
-        <input
-          type="text"
-          required
-          minLength={3}
-          maxLength={120}
-          value={cabang}
-          onChange={(e) => setCabang(e.target.value)}
-          className="w-full border-2 border-hitam-900 bg-white px-3 py-2 font-sans text-sm text-hitam-900 outline-none transition-colors focus:border-gmnimerah-500"
-          placeholder="mis. Cabang Jakarta Selatan"
-        />
-      </label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
+            Cabang (DPC)
+          </span>
+          <input
+            type="text"
+            required
+            minLength={3}
+            maxLength={100}
+            value={cabangDpc}
+            onChange={(e) => setCabangDpc(e.target.value)}
+            className="w-full border-2 border-hitam-900 bg-white px-3 py-2 font-sans text-sm text-hitam-900 outline-none transition-colors focus:border-gmnimerah-500"
+            placeholder="mis. DPC Jakarta Selatan"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
+            Komisariat
+          </span>
+          <input
+            type="text"
+            required
+            minLength={3}
+            maxLength={120}
+            value={komisariat}
+            onChange={(e) => setKomisariat(e.target.value)}
+            className="w-full border-2 border-hitam-900 bg-white px-3 py-2 font-sans text-sm text-hitam-900 outline-none transition-colors focus:border-gmnimerah-500"
+            placeholder="mis. Komisariat FISIP UI"
+          />
+        </label>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">

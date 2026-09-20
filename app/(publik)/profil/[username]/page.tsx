@@ -188,6 +188,13 @@ export default async function HalamanProfil({
               {profil.daerahAsal}
             </p>
           )}
+          {(profil.cabangDpc || profil.komisariat || profil.cabangKomisariat) && (
+            <p className="mt-1 font-mono text-[12px] uppercase tracking-widest text-hitam-400">
+              {[profil.cabangDpc, profil.komisariat ?? profil.cabangKomisariat]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
           {profil.bio ? (
             <p className="mt-3 max-w-2xl whitespace-pre-line text-sm leading-relaxed text-hitam-600">
               {profil.bio}

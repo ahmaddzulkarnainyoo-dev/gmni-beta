@@ -3,7 +3,9 @@
  *
  * Kunci keamanan: input di-escape TAMPA HARI PERTAMA (anti-XSS), lalu
  * hanya menghasilkan elemen yang diizinkan: h1-h3, p, ul/ol/li,
- * blockquote, strong, em, code, a, hr. Tidak ada HTML mentah yang lolos.
+ * blockquote, strong, em, code, a, hr, figure>img (markdown gambar),
+ * figure>iframe (token :::youtube ID::: — ID divalidasi ketat).
+ * Tidak ada HTML mentah yang lolos.
  * Untuk konten yang sepenuhnya HTML (contoh: konten seed resmi),
  * gunakan hanya pada konten tepercaya dari admin/redaksi.
  */
@@ -42,6 +44,34 @@ export function mdKeHtml(md: string): string {
     const b = mentah.trim();
     if (b === "") {
       tutupList();
+      continue;
+    }
+
+    // Gambar ber-kaption: ![caption](url) — satu baris penuh. URL hanya
+    // http(s):// atau path internal "/" (anti javascript:/data: XSS).
+    const cocokGambar = b.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/);
+    if (cocokGambar) {
+      tutupList();
+      const [, keterangan, urlMentah] = cocokGambar;
+      if (/^(https?:\/\/|\/)/i.test(urlMentah)) {
+        const keteranganHtml = keterangan
+          ? `<figcaption>${inline(esc(keterangan))}</figcaption>`
+          : "";
+        hasil.push(
+          `<figure class="konten-gambar"><img src="${esc(urlMentah)}" alt="${esc(keterangan)}" loading="lazy"/>${keteranganHtml}</figure>`,
+        );
+        continue;
+      }
+      // URL tidak sah → jatuh ke paragraf biasa (diescape penuh).
+    }
+
+    // Sisipan video YouTube: :::youtube <ID>::: — ID divalidasi ketat.
+    const cocokVideo = b.match(/^:::youtube\s+([A-Za-z0-9_-]{6,20}):::$/);
+    if (cocokVideo) {
+      tutupList();
+      hasil.push(
+        `<figure class="konten-video"><iframe src="https://www.youtube-nocookie.com/embed/${cocokVideo[1]}" title="Video YouTube" loading="lazy" allowfullscreen></iframe><figcaption>Video: YouTube</figcaption></figure>`,
+      );
       continue;
     }
 
@@ -86,6 +116,16 @@ export function mdKeHtml(md: string): string {
  */
 export function htmlKeMd(html: string): string {
   return html
+    // Sisipan media (blueprint editor): figure video & gambar → sintaks MD.
+    .replace(
+      /<figure class="konten-video"><iframe src="https:\/\/www\.youtube-nocookie\.com\/embed\/([A-Za-z0-9_-]{6,20})"[\s\S]*?<\/figure>/g,
+      "\n:::youtube $1:::\n",
+    )
+    .replace(
+      /<figure class="konten-gambar"><img src="([^"]*)" alt="([^"]*)"[^>]*\/?>[\s\S]*?<\/figure>/g,
+      (_m, src: string, alt: string) =>
+        `\n![${alt.replace(/&amp;/g, "&").replace(/&quot;/g, '"')}](${src.replace(/&amp;/g, "&")})\n`,
+    )
     .replace(/<h1>/g, "\n# ")
     .replace(/<h2>/g, "\n## ")
     .replace(/<h3>/g, "\n### ")

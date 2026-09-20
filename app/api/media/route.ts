@@ -9,10 +9,11 @@ const MAKS_BYTE_PROFIL = 2 * 1024 * 1024;
 
 /**
  * POST /api/media — unggah gambar ke Supabase Storage.
- * - Admin/Editor: gambar unggulan artikel (default, maks 5 MB, prefix artikel/).
+ * - Admin/Editor: gambar unggulan & isi artikel (default, maks 5 MB, prefix artikel/).
  * - Kader ber-permission "profil.edit_sendiri": foto profil (jenis=profil,
- *   maks 2 MB, prefix profil/). Disusun tanpa dependensi eksternal (REST
- *   API storage). Jika bucket/policy belum siap, gunakan fallback URL manual.
+ *   maks 2 MB, prefix profil/) DAN gambar isi artikel (jenis=artikel, maks 2 MB).
+ * Disusun tanpa dependensi eksternal (REST API storage). Jika bucket/policy
+ * belum siap, gunakan fallback URL manual.
  */
 export async function POST(request: Request) {
   const user = await getSessionUser();
@@ -30,9 +31,12 @@ export async function POST(request: Request) {
   }
 
   const isAdmin = !!user.roleNama && ROLES_ADMIN.includes(user.roleNama);
+  const bolehKader = user.permissions.includes("profil.edit_sendiri");
   const bolehUnggah =
     isAdmin ||
-    (jenis === "profil" && user.permissions.includes("profil.edit_sendiri"));
+    (jenis === "profil" && bolehKader) ||
+    // Q3: kader dapat mengunggah gambar untuk isi artikelnya (maks 2 MB).
+    (jenis === "artikel" && bolehKader);
   if (!bolehUnggah) {
     return NextResponse.json(
       { error: "Hanya Super Admin atau Editor yang dapat mengunggah media." },
@@ -61,14 +65,17 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const maksByte = jenis === "profil" ? MAKS_BYTE_PROFIL : MAKS_BYTE_ARTIKEL;
+    // Kader (foto profil & gambar isi artikel) dibatasi 2 MB; admin 5 MB.
+    const maksByte = isAdmin ? MAKS_BYTE_ARTIKEL : MAKS_BYTE_PROFIL;
     if (file.size > maksByte) {
       return NextResponse.json(
         {
           error:
             jenis === "profil"
               ? "Ukuran foto profil maksimal 2 MB."
-              : "Ukuran gambar maksimal 5 MB.",
+              : isAdmin
+                ? "Ukuran gambar maksimal 5 MB."
+                : "Ukuran gambar maksimal 2 MB.",
         },
         { status: 400 },
       );
