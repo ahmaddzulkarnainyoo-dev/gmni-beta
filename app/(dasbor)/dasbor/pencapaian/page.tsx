@@ -1,6 +1,6 @@
 import { KickerLabel } from "@/components/ui/KickerLabel";
 import { requireAuthUser } from "@/lib/session";
-import { LABEL_BADGE, evaluasiBadgeKader } from "@/lib/gamifikasi";
+import { LABEL_BADGE, evaluasiBadgeKader, ambilKatalogBadge } from "@/lib/gamifikasi";
 import { prisma } from "@/lib/prisma";
 import { fmtTanggal } from "@/lib/articles";
 import { amanAsync } from "@/lib/kueri-aman";
@@ -23,6 +23,7 @@ export default async function HalamanPencapaian() {
         }),
       [],
     )) ?? [];
+  const katalog = (await amanAsync(() => ambilKatalogBadge(), new Map())) ?? new Map();
 
   return (
     <div>
@@ -41,17 +42,30 @@ export default async function HalamanPencapaian() {
         </div>
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {badge.map((b) => (
+          {badge.map((b) => {
+            const katalogEntri = katalog.get(b.jenisBadge);
+            const label = katalogEntri?.label ?? LABEL_BADGE[b.jenisBadge] ?? b.jenisBadge;
+            const gambar = katalogEntri?.gambarUrl ?? null;
+            return (
             <div key={b.id} className="border-2 border-hitam-900 bg-white p-5 text-center">
-              <span
-                aria-hidden
-                className="mx-auto grid h-12 w-12 place-items-center bg-gmnimerah-500 font-serif text-2xl font-extrabold text-white"
-                style={{ clipPath: "polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)" }}
-              >
-                &starf;
-              </span>
+              {gambar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={gambar}
+                  alt={label}
+                  className="mx-auto h-16 w-16 border-2 border-hitam-900 object-cover"
+                />
+              ) : (
+                <span
+                  aria-hidden
+                  className="mx-auto grid h-12 w-12 place-items-center bg-gmnimerah-500 font-serif text-2xl font-extrabold text-white"
+                  style={{ clipPath: "polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)" }}
+                >
+                  &starf;
+                </span>
+              )}
               <p className="mt-3 font-serif text-lg font-bold text-hitam-900">
-                {LABEL_BADGE[b.jenisBadge] ?? b.jenisBadge}
+                {label}
               </p>
               <p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-hitam-400">
                 {b.periode === "SEMUA" ? "Sepanjang masa" : `Periode ${b.periode}`}
@@ -60,7 +74,8 @@ export default async function HalamanPencapaian() {
                 {fmtTanggal(b.tanggalDiperoleh)}
               </p>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

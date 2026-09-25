@@ -22,11 +22,9 @@ export function WidgetDuaFaktor({ aktifAwal }: { aktifAwal: boolean }) {
   const [eror, setEror] = useState<string | null>(null);
 
   // Render QR client-side (dynamic import agar tidak membebani bundle awal).
+  // qrUrl dibersihkan di handler yang mengubah uri (bukan sinkron di effect).
   useEffect(() => {
-    if (!uri) {
-      setQrUrl(null);
-      return;
-    }
+    if (!uri) return;
     let batal = false;
     import("qrcode")
       .then((m) => m.toDataURL(uri, { margin: 1, width: 220 }))
@@ -63,6 +61,7 @@ export function WidgetDuaFaktor({ aktifAwal }: { aktifAwal: boolean }) {
     setMemuat(true);
     setEror(null);
     setPesan(null);
+    setQrUrl(null);
     const { res, data } = await panggil("/api/kader/dua-faktor/buat");
     setMemuat(false);
     if (!res.ok) {

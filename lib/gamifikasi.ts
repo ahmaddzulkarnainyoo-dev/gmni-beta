@@ -168,6 +168,44 @@ export const LABEL_BADGE: Record<string, string> = {
   STREAK_30: "Loyal 30 Hari",
   TOP_3_MINGGU: "Tiga Besar Mingguan",
 };
+
+export type EntriKatalogBadge = {
+  jenisBadge: string;
+  label: string;
+  gambarUrl: string | null;
+  deskripsi: string | null;
+  aktif: boolean;
+};
+
+/**
+ * Katalog badge (Sub-fase 4.3): gambar/label dikelola Super Admin via
+ * /admin/leaderboard. Fallback ke LABEL_BADGE bila baris katalog belum ada —
+ * sehingga render tidak pernah gagal (amanAsync-style, tanpa throw).
+ */
+export async function ambilKatalogBadge(): Promise<Map<string, EntriKatalogBadge>> {
+  const peta = new Map<string, EntriKatalogBadge>();
+  try {
+    const baris = await prisma.katalogBadge.findMany();
+    for (const b of baris) {
+      peta.set(b.jenisBadge, {
+        jenisBadge: b.jenisBadge,
+        label: b.label || LABEL_BADGE[b.jenisBadge] || b.jenisBadge,
+        gambarUrl: b.gambarUrl,
+        deskripsi: b.deskripsi,
+        aktif: b.aktif,
+      });
+    }
+  } catch (error) {
+    console.error("[gamifikasi] Katalog badge gagal dimuat (fallback label bawaan):", error);
+  }
+  // Pastikan setiap badge bawaan punya entri fallback (label saja, tanpa gambar).
+  for (const [jenis, label] of Object.entries(LABEL_BADGE)) {
+    if (!peta.has(jenis)) {
+      peta.set(jenis, { jenisBadge: jenis, label, gambarUrl: null, deskripsi: null, aktif: true });
+    }
+  }
+  return peta;
+}
 /** Perbarui streak harian kader + badge milestone (3/7/30 hari). */
 export async function perbaruiStreak(userId: string, sekarang = new Date()): Promise<number> {
   const hariIni = tanggalHariWib(sekarang);

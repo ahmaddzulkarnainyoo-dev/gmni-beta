@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { bylineArtikel, fmtTanggal } from "@/lib/articles";
@@ -8,6 +9,7 @@ import { KickerLabel } from "@/components/ui/KickerLabel";
 import { KartuArtikel } from "@/components/ui/KartuArtikel";
 import { BagianKomentar } from "@/components/publik/BagianKomentar";
 import { SlotIklanSidebar } from "@/components/publik/SlotIklanSidebar";
+import { TombolBagikan } from "@/components/publik/TombolBagikan";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +58,10 @@ export default async function HalamanArtikel({
     .catch(() => undefined);
 
   const byline = bylineArtikel(artikel);
+  const kepala = await headers();
+  const host = kepala.get("x-forwarded-host") ?? kepala.get("host") ?? "localhost:3000";
+  const protokol = host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
+  const urlArtikel = `${protokol}://${host}/artikel/${artikel.slug}`;
 
   const terkait = await prisma.artikel.findMany({
     where: { status: "TERBIT", kategoriId: artikel.kategoriId, id: { not: artikel.id } },
@@ -128,6 +134,8 @@ export default async function HalamanArtikel({
           )}
         </div>
       </header>
+
+      <TombolBagikan judul={artikel.judul} url={urlArtikel} />
 
       <div
         className="konten-artikel mt-8"

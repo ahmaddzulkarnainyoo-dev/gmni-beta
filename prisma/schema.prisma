@@ -57,6 +57,13 @@ enum StatusHakJawab {
   DITOLAK /// tidak memenuhi syarat (spam/di luar lingkup)
 }
 
+/// Tipe notifikasi in-app kader (Sub-fase 4.3 — retensi & performa).
+enum TipeNotifikasi {
+  INFO /// umum (mis. rekap mingguan)
+  PERINGATAN /// pengingat pasif menulis
+  SUKSES /// pencapaian baru / artikel terbit
+}
+
 /// Status moderasi komentar publik (blueprint 7.5 & 8.3).
 enum StatusKomentar {
   TAMPIL
@@ -166,6 +173,9 @@ model User {
   pengaturanSitusDiubah PengaturanSitus[] @relation("PengaturanSitusOleh")
   tokenPemulihan    TokenPemulihan[]
   pemulihanDibuat   TokenPemulihan[] @relation("PemulihanDibuatOleh")
+  mengikuti         Follower[] @relation("RelasiFollowPengikut")
+  pengikut          Follower[] @relation("RelasiFollowDiikuti")
+  notifikasi        Notifikasi[] @relation("NotifikasiUser")
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -646,4 +656,54 @@ model PengaturanSitus {
   diubahOlehId     String?
   diubahOleh       User?    @relation("PengaturanSitusOleh", fields: [diubahOlehId], references: [id], onDelete: SetNull)
   updatedAt        DateTime @updatedAt
+}
+
+// ============================================================
+// KATALOG BADGE — gambar & label lencana dikelola Super Admin
+// (menggantikan ikon bintang statis; fallback bila gambarUrl kosong).
+// ============================================================
+
+model KatalogBadge {
+  id         String   @id @default(cuid())
+  jenisBadge String   @unique /// "ARTIKEL_FIRST" dst — sama dgn Pencapaian.jenisBadge
+  label      String
+  gambarUrl  String?  /// custom image; null → fallback ikon bintang SVG
+  deskripsi  String?
+  aktif      Boolean  @default(true)
+  updatedAt  DateTime @updatedAt
+}
+
+// ============================================================
+// FOLLOW — hubungan ikuti antar-kader (Sub-fase 4.3 kolaborasi).
+// ============================================================
+
+model Follower {
+  id         String   @id @default(cuid())
+  pengikutId String
+  pengikut   User     @relation("RelasiFollowPengikut", fields: [pengikutId], references: [id], onDelete: Cascade)
+  diikutiId  String
+  diikuti    User     @relation("RelasiFollowDiikuti", fields: [diikutiId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([pengikutId, diikutiId])
+  @@index([diikutiId])
+}
+
+// ============================================================
+// NOTIFIKASI — pesan in-app kader (pengingat pasif, rekap, dsb.)
+// Dibuat oleh cron terjadwal; halaman /dasbor/notifikasi membacanya.
+// ============================================================
+
+model Notifikasi {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation("NotifikasiUser", fields: [userId], references: [id], onDelete: Cascade)
+  judul     String
+  isi       String          @db.Text
+  tipe      TipeNotifikasi  @default(INFO)
+  dibaca    Boolean         @default(false)
+  createdAt DateTime        @default(now())
+
+  @@index([userId, dibaca])
+  @@index([createdAt])
 }

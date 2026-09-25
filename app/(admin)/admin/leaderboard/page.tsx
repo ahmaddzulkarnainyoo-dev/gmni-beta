@@ -12,6 +12,8 @@ import {
   PERAN_ADMIN,
 } from "@/lib/gamifikasi";
 import { AksiPeringkat } from "@/components/admin/AksiPeringkat";
+import { PanelBadge } from "@/components/admin/PanelBadge";
+import { ambilKatalogBadge } from "@/lib/gamifikasi";
 
 export const metadata: Metadata = { title: "Kelola Leaderboard" };
 export const dynamic = "force-dynamic";
@@ -24,7 +26,7 @@ export const dynamic = "force-dynamic";
 export default async function HalamanLeaderboardAdmin() {
   await requireRole("Super Admin", "Editor");
 
-  const [baris, riwayatAjus, gagalMemuat] = await amanAsync(
+  const [baris, riwayatAjus, katalogBadge, gagalMemuat] = await amanAsync(
     () =>
       Promise.all([
         // Panel audit: sertakan kader tersembunyi + akun tim redaksi/admin.
@@ -34,9 +36,10 @@ export default async function HalamanLeaderboardAdmin() {
           take: 10,
           include: { user: { select: { namaLengkap: true } } },
         }),
+        ambilKatalogBadge(),
         Promise.resolve(false),
       ]),
-    [[], [], true],
+    [[], [], new Map(), true],
   );
 
   const periode = labelPeriodeMingguan();
@@ -194,6 +197,17 @@ export default async function HalamanLeaderboardAdmin() {
           </ul>
         </section>
       )}
+
+      <PanelBadge
+        badgeAwal={Array.from(katalogBadge.values()).map((b) => ({
+          id: b.jenisBadge,
+          jenisBadge: b.jenisBadge,
+          label: b.label,
+          gambarUrl: b.gambarUrl,
+          deskripsi: b.deskripsi,
+          aktif: b.aktif,
+        }))}
+      />
     </div>
   );
 }

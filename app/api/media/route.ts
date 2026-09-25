@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/session";
+import { unggahKeSupabase } from "@/lib/storage";
 
 const ROLES_ADMIN = ["Super Admin", "Editor"];
 const TIPE_DITERIMA = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
@@ -91,36 +92,15 @@ export async function POST(request: Request) {
             : "gif";
     const folder = jenis === "profil" ? "profil" : "artikel";
     const nama = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ekstensi}`;
-    const bucket = process.env.SUPABASE_STORAGE_BUCKET ?? "artikel";
 
     const bytes = Buffer.from(await file.arrayBuffer());
-    const res = await fetch(`${supaUrl}/storage/v1/object/${bucket}/${nama}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${anon}`,
-        apikey: anon,
-        "Content-Type": file.type,
-        "x-upsert": "true",
-      },
-      body: bytes,
-    });
-
-    if (!res.ok) {
-      const keterangan = await res.text().catch(() => "");
-      console.error("[media] Upload Supabase gagal:", res.status, keterangan.slice(0, 300));
-      return NextResponse.json(
-        {
-          error:
-            "Upload gagal. Pastikan bucket & policy storage sudah dikonfigurasi, atau masukkan URL gambar manual.",
-        },
-        { status: 502 },
-      );
+    const hasil = await unggahKeSupabase(bytes, nama, file.type);
+    if (!hasil.ok) {
+      console.error("[media] Upload Supabase gagal:", hasil.error);
+      return NextResponse.json({ error: hasil.error }, { status: 502 });
     }
 
-    return NextResponse.json({
-      ok: true,
-      url: `${supaUrl}/storage/v1/object/public/${bucket}/${nama}`,
-    });
+    return NextResponse.json({ ok: true, url: hasil.url, bucket: hasil.bucket });
   } catch (error) {
     console.error("[media] Error unggah:", error);
     return NextResponse.json({ error: "Gagal mengunggah gambar." }, { status: 500 });

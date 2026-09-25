@@ -4,9 +4,10 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/session";
 import { PILIH_ARTIKEL_PUBLIK, bylineArtikel, fmtTanggal } from "@/lib/articles";
-import { LABEL_BADGE, evaluasiBadgeKader } from "@/lib/gamifikasi";
+import { LABEL_BADGE, evaluasiBadgeKader, ambilKatalogBadge } from "@/lib/gamifikasi";
 import { KartuArtikel } from "@/components/ui/KartuArtikel";
 import { KickerLabel } from "@/components/ui/KickerLabel";
+import { TombolIkuti } from "@/components/publik/TombolIkuti";
 
 export const dynamic = "force-dynamic";
 
@@ -134,11 +135,24 @@ export default async function HalamanProfil({
 
   // Badge publik (lazily, blueprint 8.4) — hanya untuk profil terbuka.
   await evaluasiBadgeKader(profil.id);
-  const lencana = await prisma.pencapaian.findMany({
-    where: { userId: profil.id },
-    orderBy: { tanggalDiperoleh: 'desc' },
-    take: 12,
-  });
+  const [lencana, statPengikut, statDiikuti, sudahMengikuti, katalogBadge] = await Promise.all([
+    prisma.pencapaian.findMany({
+      where: { userId: profil.id },
+      orderBy: { tanggalDiperoleh: "desc" },
+      take: 12,
+    }),
+    prisma.follower.count({ where: { diikutiId: profil.id } }),
+    prisma.follower.count({ where: { pengikutId: profil.id } }),
+    sesi
+      ? prisma.follower
+          .findUnique({
+            where: { pengikutId_diikutiId: { pengikutId: sesi.id, diikutiId: profil.id } },
+            select: { id: true },
+          })
+          .catch(() => null)
+      : Promise.resolve(null),
+    ambilKatalogBadge(),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 md:py-14">
@@ -215,6 +229,17 @@ export default async function HalamanProfil({
               Kirim Pesan
             </Link>
           )}
+          {!pemilik && (
+            <TombolIkuti
+              username={profil.username}
+              awalMengikuti={Boolean(sudahMengikuti)}
+              login={Boolean(sesi)}
+            />
+          )}
+          <p className="mt-3 font-mono text-[11px] uppercase tracking-widest text-hitam-400">
+            <span className="font-bold text-hitam-700">{statPengikut}</span> Pengikut ·{" "}
+            <span className="font-bold text-hitam-700">{statDiikuti}</span> Mengikuti
+          </p>
         </div>
       </section>
 
@@ -229,11 +254,26 @@ export default async function HalamanProfil({
           </p>
         ) : (
           <div className="mt-4 flex flex-wrap gap-2">
-            {lencana.map((b) => (
-              <span key={b.id} title={(LABEL_BADGE[b.jenisBadge] ?? b.jenisBadge) + ` — ` + b.periode} className="border-2 border-hitam-900 bg-white px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-700">
-                ? {LABEL_BADGE[b.jenisBadge] ?? b.jenisBadge}
-              </span>
-            ))}
+            {lencana.map((b) => {
+              const entri = katalogBadge.get(b.jenisBadge);
+              const label = entri?.label ?? LABEL_BADGE[b.jenisBadge] ?? b.jenisBadge;
+              const gambar = entri?.gambarUrl ?? null;
+              return (
+                <span
+                  key={b.id}
+                  title={`${label} — ${b.periode}`}
+                  className="flex items-center gap-1.5 border-2 border-hitam-900 bg-white px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-700"
+                >
+                  {gambar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={gambar} alt="" className="h-5 w-5 border border-hitam-900 object-cover" />
+                  ) : (
+                    <span aria-hidden className="text-gmnimerah-600">★</span>
+                  )}
+                  {label}
+                </span>
+              );
+            })}
           </div>
         )}
       </section>
