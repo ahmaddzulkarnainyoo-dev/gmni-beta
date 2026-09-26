@@ -62,14 +62,14 @@ export const FALLBACK_C: Record<string, { judul: string; konten: string }> = {
     konten:
       "<h2>Pedoman Pemberitaan Media Siber</h2>" +
       "<p>info Marhaen berpedoman pada Pedoman Pemberitaan Media Siber dan Kode Etik Jurnalistik dari Dewan Pers.</p>" +
-      "<p>Prinsip keberimbangan, kejelasan sumber, perlindungan narasumber, dan mekanisme koreksi/hak jawab.</p>",
+      "<p>Pedoman ini dijabarkan dalam prinsip keakuratan dan verifikasi, keberimbangan, kejelasan sumber, perlindungan narasumber rentan, pemisahan fakta dan opini, larangan prasangka SARA, serta mekanisme koreksi dan hak jawab. Naskah lengkap dikelola redaksi melalui /admin/halaman.</p>",
   },
   "hak-jawab": {
     judul: "Hak Jawab",
     konten:
       "<h2>Hak Jawab</h2>" +
       "<p>Setiap pihak yang merasa dirugikan oleh pemberitaan berhak mengajukan hak jawab sesuai peraturan perundang-undangan.</p>" +
-      "<p>Form pengajuan hak jawab akan tersedia di halaman ini pada Fase 1.</p>",
+      "<p>Formulir pengajuan hak jawab tersedia di bagian bawah halaman ini.</p>",
   },
 };
 
@@ -80,8 +80,8 @@ export const FALLBACK_D: Record<string, { judul: string; konten: string }> = {
     judul: "Kontak & Pengaduan",
     konten:
       "<h2>Kontak Redaksi</h2>" +
-      "<p>Email redaksi dan WhatsApp redaksi akan diumumkan melalui kanal resmi.</p>" +
-      "<p>Form pengaduan resmi akan tersedia pada Fase 1.</p>",
+      "<p>Email dan WhatsApp redaksi diumumkan melalui kanal resmi info Marhaen.</p>" +
+      "<p>Formulir pengaduan resmi tersedia di halaman ini; setiap laporan tercatat dan ditindaklanjuti redaksi.</p>",
   },
   "kebijakan-privasi": {
     judul: "Kebijakan Privasi",

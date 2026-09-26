@@ -26,13 +26,13 @@ function TanggalHariIni() {
   return <time className="uppercase">{tanggal}</time>;
 }
 
-/** 3 artikel terbit terbaru untuk ticker "TERBARU" (fallback [] bila DB offline). */
+/** 12 artikel terbit terbaru untuk ticker "TERBARU" marquee (fallback [] bila DB offline). */
 async function ambilBeritaTicker(): Promise<Array<{ judul: string; slug: string }>> {
   try {
     return await prisma.artikel.findMany({
       where: { status: "TERBIT" },
       orderBy: [{ disematkan: "desc" }, { tanggalTerbit: "desc" }],
-      take: 3,
+      take: 12,
       select: { judul: true, slug: true },
     });
   } catch {

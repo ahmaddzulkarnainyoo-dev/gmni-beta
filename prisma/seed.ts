@@ -253,8 +253,19 @@ const HALAMAN: Array<{ slug: string; judul: string; konten: string }> = [
     judul: "Pedoman Media Siber",
     konten: `
 <h2>Pedoman Pemberitaan Media Siber</h2>
-<p>info Marhaen berpedoman pada Pedoman Pemberitaan Media Siber dan Kode Etik Jurnalistik dari Dewan Pers.</p>
-<p>[RAW TEXT MENYUSUL] Prinsip keberimbangan, kejelasan sumber, perlindungan narasumber, dan mekanisme koreksi/hak jawab.</p>
+<p>Redaksi info Marhaen bekerja berlandaskan <strong>Pedoman Pemberitaan Media Siber (PPMS) Dewan Pers</strong> beserta perubahannya, serta <strong>Kode Etik Jurnalistik (KEJ)</strong>. Seluruh jurnalis, kontributor kader, dan redaktur wajib menaatinya.</p>
+<h3>Prinsip Dasar</h3>
+<ul>
+<li><strong>Keakuratan &amp; verifikasi.</strong> Setiap informasi dicek silang ke minimal dua sumber independen; rumor dan tangkapan layar yang belum terverifikasi dilarang dimuat sebagai fakta.</li>
+<li><strong>Keberimbangan.</strong> Pihak yang diberitakan, dikritik, atau disudutkan wajib diberi ruang tanggapan secara proporsional dalam pemberitaan yang sama.</li>
+<li><strong>Kejelasan sumber.</strong> Identitas narasumber dicantumkan terang; penyamaran sumber hanya untuk keselamatan dan harus seizin pemimpin redaksi.</li>
+<li><strong>Perlindungan narasumber rentan.</strong> Identitas anak, korban kekerasan seksual, dan saksi dalam ancaman wajib disamarkan; detail yang membahayakan keselamatan dilarang dipublikasikan.</li>
+<li><strong>Pemisahan fakta dan opini.</strong> Berita menyajikan fakta terverifikasi; opini dan analisis ditandai jelas sebagai rubrik Opini.</li>
+<li><strong>Tanpa prasangka SARA.</strong> Pemberitaan dilarang memuat ujaran kebencian, fitnah, hasutan, dan diskriminasi atas dasar suku, agama, ras, maupun antargolongan.</li>
+<li><strong>Koreksi dan pencabutan.</strong> Kesalahan diakui terbuka melalui ralat, revisi berstempel waktu, atau pencabutan berita, serta hak jawab sesuai ketentuan yang berlaku.</li>
+</ul>
+<h3>Ralat, Revisi, dan Hak Jawab</h3>
+<p>Pembaca yang menemukan kekeliruan dapat mengajukan koreksi melalui halaman Hak Jawab. Setiap ralat dimuat transparan dengan penanda waktu pembaruan, tanpa menghapus jejak versi sebelumnya kecuali bertentangan dengan putusan hukum yang berkekuatan tetap.</p>
 `,
   },
   {
@@ -285,8 +296,9 @@ const HALAMAN: Array<{ slug: string; judul: string; konten: string }> = [
     judul: "Kontak & Pengaduan",
     konten: `
 <h2>Kontak Redaksi</h2>
-<p>Email redaksi: [MENYUSUL] — WhatsApp redaksi: [MENYUSUL]</p>
-<p>Form pengaduan resmi akan tersedia pada Fase 1.</p>
+<p>Email dan WhatsApp redaksi diumumkan melalui kanal resmi info Marhaen. Untuk sementara, sampaikan keperluan redaksi melalui formulir di halaman ini.</p>
+<h3>Form Pengaduan</h3>
+<p>Formulir pengaduan resmi tersedia di bawah. Setiap laporan tercatat dan ditindaklanjuti redaksi sesuai urgensi: koreksi pemberitaan, pelanggaran kode etik, serta penyalahgunaan platform.</p>
 `,
   },
   {
@@ -294,13 +306,20 @@ const HALAMAN: Array<{ slug: string; judul: string; konten: string }> = [
     judul: "Kebijakan Privasi",
     konten: `
 <h2>Kebijakan Privasi</h2>
-<p>info Marhaen tunduk pada Undang-Undang Pelindungan Data Pribadi (UU PDP) No. 27 Tahun 2022.</p>
+<p>info Marhaen tunduk pada <strong>Undang-Undang Pelindungan Data Pribadi (UU PDP) No. 27 Tahun 2022</strong> beserta peraturan pelaksananya.</p>
+<ul>
+<li><strong>Data yang dikumpulkan:</strong> nama, email, nomor WhatsApp, cookie, dan data aktivitas pembaca yang relevan untuk penyelenggaraan layanan.</li>
+<li><strong>Tujuan penggunaan:</strong> pelaksanaan layanan, verifikasi kader, notifikasi, dan statistik redaksi. Data tidak diperjualbelikan.</li>
+<li><strong>Hak pengguna:</strong> mengakses, memperbaiki, menghapus, menarik persetujuan, dan mengajukan keberatan atas pemrosesan data pribadi melalui kontak redaksi.</li>
+<li><strong>Keamanan dan retensi:</strong> data dilindungi kontrol akses berlapis dan disimpan hanya selama diperlukan, lalu dihapus atau dianonimkan.</li>
+<li><strong>Cookie:</strong> situs memakai cookie fungsional dan analitik agregat; pembaca dapat mengaturnya melalui peramban masing-masing.</li>
+</ul>
+<p>Pertanyaan atau pengaduan terkait data pribadi dapat disampaikan melalui halaman Kontak dan Pengaduan; redaksi menindaklanjutinya sesuai peraturan perundang-undangan.</p>
 <ul>
   <li><strong>Data yang dikumpulkan:</strong> nama, email, nomor WhatsApp, cookie, dan data aktivitas pembaca yang relevan.</li>
   <li><strong>Tujuan penggunaan:</strong> pelaksanaan layanan, verifikasi kader, notifikasi, dan statistik redaksi.</li>
   <li><strong>Hak pengguna:</strong> mengakses, memperbaiki, menghapus, dan menarik persetujuan atas data pribadi.</li>
 </ul>
-<p>[RAW TEXT MENYUSUL] Rincian kebijakan lengkap akan disempurnakan bersama penasihat hukum.</p>
 `,
   },
 ];

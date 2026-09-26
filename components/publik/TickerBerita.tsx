@@ -1,23 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 type ItemTicker = { judul: string; slug: string | null };
 
-const INTERVAL = 4500;
-const ITEM_MINIMAL = 3;
+const ITEM_MINIMAL = 6;
+const DURASI_PER_ITEM_DETIK = 7;
+const DURASI_MIN_DETIK = 24;
+const DURASI_MAX_DETIK = 90;
 const PLACEHOLDER: ItemTicker = {
   judul: "Berita baru segera hadir di info Marhaen.",
   slug: null,
 };
 
 /**
- * Ticker berita dinamis di bar "TERBARU" — auto-rotate fade-slide
- * tiap 4,5 detik, berhenti saat hover/fokus. Judul memakai sans-serif
- * normal (bukan kapital rapat) agar terbaca seperti lead koran, dan
- * tertaut ke /artikel/[slug]. Jika artikel terbit < 3, slot dilengkapi
+ * Ticker berita ala breaking news — marquee CSS kontinu yang bergerak
+ * mulus dari kanan ke kiri, berhenti saat hover/fokus, dan hormat pada
+ * preferensi reduced-motion. Slot konten selalu terisi penuh: bila
+ * artikel terbit kurang dari ambang, daftar digandakan/dilengkapi
  * placeholder rapi (bukan teks mentah).
  */
 export function TickerBerita({
@@ -25,56 +25,69 @@ export function TickerBerita({
 }: {
   berita: Array<{ judul: string; slug: string }>;
 }) {
-  const item: ItemTicker[] = [...berita.slice(0, ITEM_MINIMAL)];
-  while (item.length < ITEM_MINIMAL) item.push(PLACEHOLDER);
+  const pokok: ItemTicker[] = berita.slice(0, 12).map((b) => ({
+    judul: b.judul,
+    slug: b.slug,
+  }));
 
-  const [indeks, setIndeks] = useState(0);
-  const [jeda, setJeda] = useState(false);
+  // Pastikan rel cukup panjang agar loop mulus, lalu duplikasi 2x
+  // agar pergeseran -50% menyambung tanpa lompatan.
+  const dasar: ItemTicker[] = pokok.length === 0 ? [PLACEHOLDER] : [...pokok];
+  while (dasar.length < ITEM_MINIMAL) {
+    const sisa = pokok.length === 0 ? [PLACEHOLDER] : pokok;
+    dasar.push(sisa[(dasar.length - (pokok.length === 0 ? 1 : 0)) % sisa.length]);
+  }
+  const rel = [...dasar, ...dasar];
 
-  useEffect(() => {
-    if (jeda) return;
-    const id = setInterval(() => {
-      setIndeks((v) => (v + 1) % item.length);
-    }, INTERVAL);
-    return () => clearInterval(id);
-  }, [jeda, item.length]);
+  const durasiDetik = Math.min(
+    DURASI_MAX_DETIK,
+    Math.max(DURASI_MIN_DETIK, dasar.length * DURASI_PER_ITEM_DETIK),
+  );
 
   return (
     <div
-      aria-live="polite"
-      onMouseEnter={() => setJeda(true)}
-      onMouseLeave={() => setJeda(false)}
-      className="relative h-6 min-w-0 flex-1 overflow-hidden font-sans text-[13px] font-normal normal-case tracking-normal sm:text-sm"
+      className="marquee-jeda group relative min-w-0 flex-1 overflow-hidden font-sans text-[13px] font-normal normal-case tracking-normal sm:text-sm [mask-image:linear-gradient(to_right,transparent,black_2rem,black_calc(100%-2rem),transparent)]"
     >
-      {item.map((b, i) => {
-        const tampil = i === indeks;
-        return (
-          <div
-            key={b.slug ?? `placeholder-${i}`}
-            aria-hidden={!tampil}
-            className={cn(
-              "absolute inset-0 flex items-center transition-all duration-700 ease-in-out",
-              tampil
-                ? "translate-x-0 opacity-100"
-                : "pointer-events-none -translate-x-3 opacity-0",
+      {/* Rel marquee — aria-hidden agar pembaca layar tidak terpapar duplikat. */}
+      <div
+        aria-hidden
+        className="animate-marquee flex w-max items-center gap-0 py-1"
+        style={{ ["--marquee-durasi" as string]: `${durasiDetik}s` }}
+      >
+        {rel.map((b, i) => (
+          <span key={`${b.slug ?? "ph"}-${i}`} className="flex shrink-0 items-center">
+            {i > 0 && (
+              <span aria-hidden className="mx-4 select-none text-[9px] text-gmnimerah-500">
+                {"\u25CF"}
+              </span>
             )}
-          >
             {b.slug ? (
               <Link
                 href={`/artikel/${b.slug}`}
-                tabIndex={tampil ? undefined : -1}
-                onFocus={() => setJeda(true)}
-                onBlur={() => setJeda(false)}
-                className="block truncate text-hitam-800 transition-colors hover:text-red-600 hover:underline hover:underline-offset-4"
+                tabIndex={-1}
+                className="block max-w-[70vw] truncate text-hitam-800 transition-colors hover:text-red-600 hover:underline hover:underline-offset-4 sm:max-w-[46vw]"
               >
                 {b.judul}
               </Link>
             ) : (
               <span className="block truncate text-hitam-500">{b.judul}</span>
             )}
-          </div>
-        );
-      })}
+          </span>
+        ))}
+      </div>
+
+      {/* Daftar asli untuk pembaca layar & saat animasi dimatikan. */}
+      <ul className="sr-only">
+        {dasar.map((b, i) =>
+          b.slug ? (
+            <li key={`sr-${b.slug}-${i}`}>
+              <Link href={`/artikel/${b.slug}`}>{b.judul}</Link>
+            </li>
+          ) : (
+            <li key={`sr-ph-${i}`}>{b.judul}</li>
+          ),
+        )}
+      </ul>
     </div>
   );
 }

@@ -269,3 +269,34 @@
     border-color: var(--color-gmnimerah-500);
   }
 }
+
+/* ============================================================
+   Ticker berita — running text halus ala breaking news (marquee
+   CSS kontinu: rel bergerak mulus, berhenti saat hover/fokus).
+   ============================================================ */
+@layer utilities {
+  @keyframes marquee-geser {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  .animate-marquee {
+    animation: marquee-geser var(--marquee-durasi, 36s) linear infinite;
+    will-change: transform;
+  }
+
+  .marquee-jeda:hover .animate-marquee,
+  .marquee-jeda:focus-within .animate-marquee {
+    animation-play-state: paused;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}
