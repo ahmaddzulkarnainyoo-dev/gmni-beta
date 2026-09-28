@@ -6,6 +6,7 @@ import {
   ambilTargetDm,
   bolehMulaiPercakapanBaru,
   cariPercakapanSatuLawanSatu,
+  notifikasiPesanMasuk,
 } from "@/lib/dm";
 import { catatAktivitas, perbaruiStreak } from "@/lib/gamifikasi";
 
@@ -17,6 +18,31 @@ type BodyKirim = {
   username?: string;
   isi?: string;
 };
+
+/**
+ * Notifikasi kotak masuk ke lawan bicara pada room EKSISTING (best-effort).
+ * Sengaja dipisah sebagai fungsi modul: narrowing `user` dari sesi tidak
+ * berlaku di dalam closure, jadi pengirim diteruskan sebagai parameter.
+ * Pemanggil tidak menunggu (fire-and-forget) agar kegagalan notifikasi tidak
+ * menggagalkan pengiriman pesan yang sudah tersimpan.
+ */
+async function kabarkanLawan(
+  percakapanId: string,
+  pengirim: { id: string; name: string },
+  isi: string,
+): Promise<void> {
+  const lawan = await prisma.anggotaPercakapan.findFirst({
+    where: { percakapanId, userId: { not: pengirim.id } },
+    select: { userId: true },
+  });
+  if (!lawan) return;
+  await notifikasiPesanMasuk({
+    percakapanId,
+    penerimaId: lawan.userId,
+    pengirimNama: pengirim.name,
+    isi,
+  });
+}
 
 /**
  * POST /api/pesan — kirim pesan ke room eksisting atau buat room 1-on-1 baru.
@@ -97,6 +123,8 @@ export async function POST(request: Request) {
     catatAktivitas(user.id, "AKTIF_HARIAN")
       .then(() => perbaruiStreak(user.id))
       .catch(() => undefined);
+    // Notifikasi kotak masuk penerima (best-effort).
+    kabarkanLawan(body.percakapanId, user, isi).catch(() => undefined);
     return NextResponse.json(
       { ok: true, percakapanId: body.percakapanId, pesan },
       { status: 201 },
@@ -140,6 +168,8 @@ export async function POST(request: Request) {
     catatAktivitas(user.id, "AKTIF_HARIAN")
       .then(() => perbaruiStreak(user.id))
       .catch(() => undefined);
+    // Notifikasi kotak masuk penerima (best-effort).
+    kabarkanLawan(lama, user, isi).catch(() => undefined);
     return NextResponse.json(
       { ok: true, percakapanId: lama, pesan },
       { status: 201 },
@@ -184,6 +214,14 @@ export async function POST(request: Request) {
   catatAktivitas(user.id, "AKTIF_HARIAN")
     .then(() => perbaruiStreak(user.id))
     .catch(() => undefined);
+
+  // Notifikasi kotak masuk penerima (best-effort; room baru → target diketahui).
+  notifikasiPesanMasuk({
+    percakapanId: dibuat.id,
+    penerimaId: targetId,
+    pengirimNama: user.name,
+    isi,
+  }).catch(() => undefined);
 
   return NextResponse.json(
     { ok: true, percakapanId: dibuat.id, pesan: dibuat.pesan[0] ?? null },

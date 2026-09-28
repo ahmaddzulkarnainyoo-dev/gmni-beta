@@ -32,7 +32,7 @@ export function TombolBagikan({ judul, url }: { judul: string; url: string }) {
   }
 
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-500">
         Bagikan
       </span>

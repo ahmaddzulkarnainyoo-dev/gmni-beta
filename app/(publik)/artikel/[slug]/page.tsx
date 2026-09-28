@@ -10,6 +10,7 @@ import { KartuArtikel } from "@/components/ui/KartuArtikel";
 import { BagianKomentar } from "@/components/publik/BagianKomentar";
 import { SlotIklanSidebar } from "@/components/publik/SlotIklanSidebar";
 import { TombolBagikan } from "@/components/publik/TombolBagikan";
+import { TombolApresiasi } from "@/components/publik/TombolApresiasi";
 
 export const dynamic = "force-dynamic";
 
@@ -135,7 +136,10 @@ export default async function HalamanArtikel({
         </div>
       </header>
 
-      <TombolBagikan judul={artikel.judul} url={urlArtikel} />
+      <div className="mt-6 flex flex-wrap items-center gap-2 border-y-2 border-hitam-900 py-3">
+        <TombolApresiasi artikelId={artikel.id} />
+        <TombolBagikan judul={artikel.judul} url={urlArtikel} />
+      </div>
 
       <div
         className="konten-artikel mt-8"

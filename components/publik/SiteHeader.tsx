@@ -10,6 +10,7 @@ import {
 } from "@/lib/site";
 import { MobileNav } from "@/components/publik/MobileNav";
 import { NavDesktop } from "@/components/publik/NavDesktop";
+import { PencarianCepat } from "@/components/publik/PencarianCepat";
 import { TickerBerita } from "@/components/publik/TickerBerita";
 import { SlotIklanHeader } from "@/components/publik/SlotIklanHeader";
 import { TombolKeluar } from "@/components/ui/TombolKeluar";
@@ -97,9 +98,9 @@ export async function SiteHeader() {
         </div>
       </div>
 
-      {/* Masthead — wordmark media */}
+      {/* Masthead — wordmark media + bilah pencarian utama (gaya Google) */}
       <div className="border-b-[3px] border-double border-hitam-900 bg-kertas-50">
-        <div className="mx-auto flex max-w-6xl items-center justify-center px-4 py-8 sm:py-10 lg:py-12">
+        <div className="mx-auto flex max-w-6xl flex-col items-center px-4 py-8 sm:py-10 lg:py-12">
           <Link href="/" className="flex min-w-0 items-center gap-4 sm:gap-5 lg:gap-7" aria-label={SITE_NAME}>
             {/* Logo resmi GMNI (public/logo.png) */}
             <Image
@@ -119,6 +120,11 @@ export async function SiteHeader() {
               </p>
             </div>
           </Link>
+
+          {/* Pencarian utama — menonjol di bawah wordmark, lebar lega ala Google */}
+          <div className="mt-6 w-full max-w-2xl sm:mt-8">
+            <PencarianCepat />
+          </div>
         </div>
       </div>
 

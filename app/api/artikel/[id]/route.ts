@@ -37,6 +37,67 @@ export async function PATCH(
       return NextResponse.json({ error: "Isi permintaan tidak valid." }, { status: 400 });
     }
     const aksi = typeof body.aksi === "string" ? body.aksi : null;
+    const aksiPenulis = typeof body.aksiPenulis === "string" ? body.aksiPenulis : null;
+
+    // ── MODE PENULIS: arsipkan / ajukan ulang tulisan sendiri ────────────
+    // Kader boleh mengelola tulisannya sendiri tanpa campur tangan redaksi:
+    // ARSIPKAN (DRAFT/DIAJUKAN/DIMINTA_REVISI/DITOLAK → DIARSIPKAN) dan
+    // AJUKAN_ULANG (DITOLAK/DIARSIPKAN → DIAJUKAN, kembali ke antrean).
+    if (aksiPenulis === "ARSIPKAN" || aksiPenulis === "AJUKAN_ULANG") {
+      if (artikel.penulisId !== user.id) {
+        return NextResponse.json({ error: "Bukan tulisan milik Anda." }, { status: 403 });
+      }
+      if (aksiPenulis === "ARSIPKAN") {
+        if (!["DRAFT", "DIAJUKAN", "DIMINTA_REVISI", "DITOLAK"].includes(artikel.status)) {
+          return NextResponse.json(
+            { error: "Tulisan pada status ini tidak bisa diarsipkan." },
+            { status: 400 },
+          );
+        }
+        await prisma.$transaction([
+          prisma.artikel.update({ where: { id }, data: { status: "DIARSIPKAN" } }),
+          prisma.auditLog.create({
+            data: {
+              aktorId: user.id,
+              aksi: "artikel.arsip_penulis",
+              entitasTipe: "Artikel",
+              entitasId: id,
+              dataSesudah: { statusLama: artikel.status, statusBaru: "DIARSIPKAN" },
+            },
+          }),
+        ]);
+        return NextResponse.json({ ok: true, status: "DIARSIPKAN" });
+      }
+      // AJUKAN_ULANG
+      if (!user.permissions.includes("artikel.submit")) {
+        return NextResponse.json(
+          { error: "Tidak punya izin mengajukan ke redaksi." },
+          { status: 403 },
+        );
+      }
+      if (!["DITOLAK", "DIARSIPKAN"].includes(artikel.status)) {
+        return NextResponse.json(
+          { error: "Hanya tulisan ditolak/diarsipkan yang bisa diajukan ulang." },
+          { status: 400 },
+        );
+      }
+      await prisma.$transaction([
+        prisma.artikel.update({
+          where: { id },
+          data: { status: "DIAJUKAN", tanggalDiajukan: new Date(), catatanRevisi: null },
+        }),
+        prisma.auditLog.create({
+          data: {
+            aktorId: user.id,
+            aksi: "artikel.ajukan_ulang",
+            entitasTipe: "Artikel",
+            entitasId: id,
+            dataSesudah: { statusLama: artikel.status, statusBaru: "DIAJUKAN" },
+          },
+        }),
+      ]);
+      return NextResponse.json({ ok: true, status: "DIAJUKAN" });
+    }
 
   if (aksi) {
     // ── MODE REDAKSI ──────────────────────────────────────────────

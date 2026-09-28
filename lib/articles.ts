@@ -13,6 +13,7 @@ export const PILIH_ARTIKEL_PUBLIK = {
   disematkan: true,
   tanggalTerbit: true,
   jumlahDilihat: true,
+  jumlahApresiasi: true,
   kategori: { select: { nama: true, slug: true } },
   penulis: { select: { namaLengkap: true, username: true } },
 } as const;
@@ -28,6 +29,7 @@ export type ArtikelPublik = {
   disematkan: boolean;
   tanggalTerbit: Date | null;
   jumlahDilihat: number;
+  jumlahApresiasi: number;
   kategori: { nama: string; slug: string };
   penulis: { namaLengkap: string; username: string };
 };
@@ -61,6 +63,26 @@ export async function ambilTerbitTerbaru(batas = 9) {
     // Guard publik: DB latency/timeout Supabase → halaman utama tetap
     // render (grid kosong), tidak jatuh ke "Mesin Cetak Macet".
     console.error("[articles] ambilTerbitTerbaru gagal:", e instanceof Error ? e.message : e);
+    return [];
+  }
+}
+
+/**
+ * Artikel terbit paling diapresiasi (tepuk tangan ala Medium).
+ * Hanya menyertakan artikel yang sudah punya >= 1 tepuk supaya strip
+ * "Paling Diapresiasi" tidak berisi artikel bernilai nol.
+ */
+export async function ambilTerpopuler(batas = 6) {
+  try {
+    return await prisma.artikel.findMany({
+      where: { status: "TERBIT", jumlahApresiasi: { gt: 0 } },
+      orderBy: [{ jumlahApresiasi: "desc" }, { tanggalTerbit: "desc" }],
+      take: batas,
+      select: PILIH_ARTIKEL_PUBLIK,
+    });
+  } catch (e) {
+    // Guard publik: DB latency/timeout Supabase → strip cukup disembunyikan.
+    console.error("[articles] ambilTerpopuler gagal:", e instanceof Error ? e.message : e);
     return [];
   }
 }

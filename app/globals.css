@@ -241,6 +241,113 @@
     margin-top: 0;
   }
 
+  /* ==========================================================
+     Tipografi editorial gaya media internasional — dipakai
+     halaman Tentang (lead besar, drop cap, subjudul tegas, ruang
+     baca lega). Sengaja TERPISAH dari `.konten-artikel` supaya
+     halaman artikel/statis lain tidak ikut berubah.
+     ========================================================== */
+  .konten-editorial {
+    color: var(--color-hitam-700);
+    font-family: var(--font-lora), Georgia, "Times New Roman", serif;
+    font-size: 1.1875rem;
+    line-height: 1.85;
+  }
+
+  .konten-editorial > p:first-of-type::first-letter {
+    float: left;
+    margin: 0.08em 0.09em 0 0;
+    font-family: var(--font-lora), Georgia, serif;
+    font-size: 3.4em;
+    font-weight: 700;
+    line-height: 0.82;
+    color: var(--color-gmnimerah-600);
+  }
+
+  .konten-editorial h2 {
+    margin: 2.2em 0 0.6em;
+    font-family: var(--font-lora), Georgia, serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--color-hitam-900);
+  }
+
+  .konten-editorial h2::after {
+    content: "";
+    display: block;
+    width: 3rem;
+    height: 4px;
+    margin-top: 0.5rem;
+    background: var(--color-gmnimerah-500);
+  }
+
+  .konten-editorial h3 {
+    margin: 1.8em 0 0.4em;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--color-hitam-900);
+  }
+
+  .konten-editorial p {
+    margin: 0 0 1.3em;
+  }
+
+  .konten-editorial ul,
+  .konten-editorial ol {
+    margin: 0 0 1.5em 1.35em;
+  }
+
+  .konten-editorial ul {
+    list-style: disc;
+  }
+
+  .konten-editorial ol {
+    list-style: decimal;
+  }
+
+  .konten-editorial li {
+    margin-bottom: 0.6em;
+  }
+
+  .konten-editorial li::marker {
+    color: var(--color-gmnimerah-500);
+  }
+
+  .konten-editorial strong {
+    font-weight: 700;
+    color: var(--color-hitam-900);
+  }
+
+  .konten-editorial a {
+    color: var(--color-gmnimerah-700);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .konten-editorial blockquote {
+    margin: 1.75em 0;
+    border-left: 4px solid var(--color-gmnimerah-500);
+    padding-left: 1.1em;
+    font-size: 1.08em;
+    font-style: italic;
+    color: var(--color-hitam-900);
+  }
+
+  .konten-editorial hr {
+    border: 0;
+    border-top: 1px solid var(--color-hitam-200);
+    margin: 2.5em 0;
+  }
+
+  .konten-editorial > :first-child {
+    margin-top: 0;
+  }
+
   /* Utilitas form admin (panel tokoh/kategori/tag) */
   .label-bidang {
     margin-bottom: 0.25rem;

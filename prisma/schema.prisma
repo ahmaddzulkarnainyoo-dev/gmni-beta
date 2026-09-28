@@ -157,6 +157,7 @@ model User {
   tokohDibuat       Tokoh[]    @relation("TokohDibuatOleh")
   auditLogs         AuditLog[]
   komentar          Komentar[]
+  apresiasiArtikel  Apresiasi[] @relation("UserApresiasi")
   keanggotaanPercakapan AnggotaPercakapan[]
   pesanTerkirim     Pesan[] @relation("PesanTerkirim")
   kegiatan          KegiatanKader[] @relation("KegiatanKader")
@@ -271,6 +272,8 @@ model Artikel {
   kategori                  Kategori          @relation(fields: [kategoriId], references: [id])
   tags                      ArtikelTag[]
   komentar                  Komentar[]
+  jumlahApresiasi         Int                 @default(0) /// denormalisasi total tepuk (SUM Apresiasi.jumlah)
+  apresiasi               Apresiasi[]         @relation("ArtikelApresiasi")
   penulisId                 String
   penulis                   User              @relation("ArtikelPenulis", fields: [penulisId], references: [id])
   status                    StatusArtikel     @default(DRAFT)
@@ -702,8 +705,27 @@ model Notifikasi {
   isi       String          @db.Text
   tipe      TipeNotifikasi  @default(INFO)
   dibaca    Boolean         @default(false)
+  tautan    String?           /// deep-link tujuan saat item diklik (mis. /dasbor/pesan)
   createdAt DateTime        @default(now())
 
   @@index([userId, dibaca])
   @@index([createdAt])
+}
+
+// ============================================================
+// APRESIASI — tepuk tangan ala Medium (1 user s.d. 50 tepuk/artikel)
+// Total denormalisasi di Artikel.jumlahApresiasi.
+// ============================================================
+
+model Apresiasi {
+  id        String   @id @default(cuid())
+  artikelId String
+  artikel   Artikel  @relation("ArtikelApresiasi", fields: [artikelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("UserApresiasi", fields: [userId], references: [id], onDelete: Cascade)
+  jumlah    Int      @default(1) /// akumulasi tepuk 1-50
+  updatedAt DateTime @updatedAt
+
+  @@unique([artikelId, userId])
+  @@index([artikelId])
 }

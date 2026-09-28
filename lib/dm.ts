@@ -84,3 +84,46 @@ export function bolehMulaiPercakapanBaru(
   if (apakahStaf(sesi)) return true;
   return !target.profilTersembunyi;
 }
+
+/** Id notifikasi kotak masuk untuk sebuah percakapan (idempoten: 1 per room). */
+export function idNotifikasiPesan(percakapanId: string): string {
+  return `pesan-${percakapanId}`;
+}
+
+/**
+ * Upsert notifikasi kotak masuk untuk PENERIMA pesan baru (best-effort).
+ * Dipakai `POST /api/pesan` agar lonceng notifikasi dasbor berbunyi saat ada
+ * DM masuk. Satu baris per percakapan (di-refresh tiap pesan baru, kembali
+ * "belum dibaca") supaya kotak masuk tidak dibanjiri ribuan duplikat saat
+ * percakapan aktif. `tautan` menunjuk langsung ke /dasbor/pesan.
+ */
+export async function notifikasiPesanMasuk(params: {
+  percakapanId: string;
+  penerimaId: string;
+  pengirimNama: string;
+  isi: string;
+}): Promise<void> {
+  const cuplikan = params.isi.replace(/\s+/g, " ").trim().slice(0, 140);
+  const judul = `Pesan baru dari ${params.pengirimNama || "kader"}`;
+  await prisma.notifikasi.upsert({
+    where: { id: idNotifikasiPesan(params.percakapanId) },
+    create: {
+      id: idNotifikasiPesan(params.percakapanId),
+      userId: params.penerimaId,
+      judul,
+      isi: cuplikan,
+      tipe: "INFO",
+      tautan: "/dasbor/pesan",
+    },
+    update: {
+      // Room 1-on-1: kepemilikan baris berpindah ke lawan bicara terakhir,
+      // sehingga notifikasi selalu menunjuk penerima pesan paling baru.
+      userId: params.penerimaId,
+      judul,
+      isi: cuplikan,
+      tipe: "INFO",
+      tautan: "/dasbor/pesan",
+      dibaca: false,
+    },
+  });
+}

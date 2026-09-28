@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { htmlKeMd, mdKeHtml } from "@/lib/markdown";
 import { idYoutube, sisipAtKursor } from "@/lib/editor-util";
 import { slugify } from "@/lib/slug";
+import { PanelPengaturan } from "@/components/dasbor/PanelPengaturan";
 import type { StatusArtikel, VisibilitasPenulis } from "@prisma/client";
 
 type KategoriOpsi = { id: string; nama: string; slug: string; isTetap: boolean };
@@ -106,6 +107,7 @@ export function FormArtikelAdmin({
 const [bukaPratinjau, setBukaPratinjau] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const [erorUnggah, setErorUnggah] = useState<string | null>(null);
+  const [panel, setPanel] = useState(false);
 
   const pratinjauHtml = useMemo(() => mdKeHtml(konten), [konten]);
 
@@ -254,119 +256,99 @@ const [bukaPratinjau, setBukaPratinjau] = useState(false);
   const butuhCatatan = !buat && (status === "DIMINTA_REVISI" || status === "DITOLAK");
 
   return (
-    <form onSubmit={simpan} className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-hitam-900 pb-3">
-        <div>
-          <h1 className="font-serif text-2xl font-extrabold text-hitam-900 md:text-3xl">
-            {buat ? "Tulis Artikel" : "Edit Artikel"}
-          </h1>
-          <p className="mt-1 text-sm text-hitam-500">
-            Editor Markdown dengan pratinjau. Perubahan langsung tersimpan ke
-            database & dicatat di audit log.
-          </p>
+    <form onSubmit={simpan} className="pb-6">
+      {/* Toolbar lengket ala Medium — tipis, blur, tanpa kotak kaku */}
+      <div className="sticky top-0 z-30 -mx-3 mb-8 border-b border-hitam-200 bg-kertas-50/85 px-3 py-2 backdrop-blur-md sm:-mx-4 sm:px-4">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-auto shrink-0 font-serif text-sm font-bold text-hitam-900">
+            {buat ? "Artikel Baru" : "Edit Artikel"}
+          </span>
+
+          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+            {SNIPPET_MD.map((s) => (
+              <button
+                key={s.label}
+                type="button"
+                onClick={() => sisip(s.teks)}
+                className="shrink-0 border border-transparent px-2 py-1 font-mono text-[11px] text-hitam-600 transition-colors hover:border-hitam-200 hover:bg-white hover:text-hitam-900"
+              >
+                {s.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              disabled={unggahKonten}
+              onClick={() => unggahGambarRef.current?.click()}
+              className="shrink-0 border border-transparent px-2 py-1 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:border-gmnimerah-200 hover:bg-white disabled:opacity-50"
+            >
+              {unggahKonten ? "Mengunggah…" : "Gambar"}
+            </button>
+            <button
+              type="button"
+              onClick={sisipVideo}
+              className="shrink-0 border border-transparent px-2 py-1 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:border-gmnimerah-200 hover:bg-white"
+            >
+              Video
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setPanel(true)}
+            className="shrink-0 border border-hitam-200 bg-white px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-hitam-700 transition-colors hover:border-hitam-900 hover:text-hitam-900"
+          >
+            Metadata
+          </button>
+          <button
+            type="button"
+            onClick={() => setPratinjau((p) => !p)}
+            className="shrink-0 border border-hitam-900 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white"
+          >
+            {pratinjau ? "Tulis" : "Pratinjau"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setPratinjau((p) => !p)}
-          className="border-2 border-hitam-900 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white"
-        >
-          {pratinjau ? "Kembali Menulis" : "Pratinjau"}
-        </button>
       </div>
 
       {eror && (
-        <p role="alert" className="border-2 border-gmnimerah-500 bg-gmnimerah-50 px-3 py-2 text-sm font-semibold text-gmnimerah-700">
+        <p role="alert" className="mb-6 border-2 border-gmnimerah-500 bg-gmnimerah-50 px-3 py-2 text-sm font-semibold text-gmnimerah-700">
           {eror}
         </p>
       )}
       {info && (
-        <p role="status" className="border-2 border-hitam-900 bg-kertas-200 px-3 py-2 text-sm font-semibold text-hitam-800">
+        <p role="status" className="mb-6 border-2 border-hitam-900 bg-kertas-200 px-3 py-2 text-sm font-semibold text-hitam-800">
           {info}
         </p>
       )}
 
-      <label className="block">
-        <span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
-          Judul
-        </span>
-        <input
-          type="text"
-          required
-          minLength={8}
-          value={judul}
-          onChange={(e) => gantiJudul(e.target.value)}
-          className="w-full border-2 border-hitam-900 bg-white px-3 py-2.5 font-serif text-xl font-bold text-hitam-900 outline-none transition-colors focus:border-gmnimerah-500"
-          placeholder="Judul yang tegas — seperti headline media cetak"
-        />
-      </label>
+      <div className="mx-auto w-full max-w-3xl">
+        <label className="block">
+          <span className="sr-only">Judul</span>
+          <input
+            type="text"
+            required
+            minLength={8}
+            value={judul}
+            onChange={(e) => gantiJudul(e.target.value)}
+            className="w-full border-0 bg-transparent px-0 font-serif text-3xl font-extrabold leading-tight text-hitam-900 outline-none placeholder:text-hitam-300 md:text-4xl lg:text-5xl"
+            placeholder="Judul artikel…"
+          />
+        </label>
 
-      <label className="block">
-        <span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
-          Slug (URL)
-        </span>
-        <input
-          type="text"
-          value={slug}
-          onChange={(e) => {
-            setSlugDibuat(true);
-            setSlug(e.target.value);
-          }}
-          className="w-full border-2 border-hitam-900 bg-white px-3 py-2 font-mono text-sm text-hitam-900 outline-none focus:border-gmnimerah-500"
-          placeholder="slug-otomatis-dari-judul"
-        />
-        <span className="mt-1 block text-xs text-hitam-400">
-          Kosongkan untuk membuat otomatis. Hanya huruf kecil, angka, dan tanda hubung.
-        </span>
-      </label>
-
-      <label className="block">
-        <span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
-          Ringkasan (opsional, tampil di kartu berita)
-        </span>
-        <textarea
-          rows={2}
-          value={ringkasan}
-          onChange={(e) => setRingkasan(e.target.value)}
-          className="w-full border-2 border-hitam-900 bg-white px-3 py-2 font-sans text-sm text-hitam-900 outline-none transition-colors focus:border-gmnimerah-500"
-          maxLength={300}
-          placeholder="Satu-dua kalimat yang memancing pembaca."
-        />
-      </label>
+        <label className="mt-4 block">
+          <span className="sr-only">Ringkasan</span>
+          <textarea
+            rows={2}
+            value={ringkasan}
+            onChange={(e) => setRingkasan(e.target.value)}
+            className="w-full resize-none border-0 border-l-2 border-hitam-200 bg-transparent px-0 py-0 pl-3 font-serif text-lg italic leading-relaxed text-hitam-600 outline-none placeholder:text-hitam-300"
+            maxLength={300}
+            placeholder="Ringkasan singkat (opsional) — satu-dua kalimat pemikat pembaca."
+          />
+        </label>
 
       {!pratinjau && (
-        <div>
-          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-            <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
-              Isi Artikel (Markdown)
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {SNIPPET_MD.map((s) => (
-                <button
-                  key={s.label}
-                  type="button"
-                  onClick={() => sisip(s.teks)}
-                  className="border border-hitam-300 bg-kertas-100 px-2 py-1 font-mono text-[11px] text-hitam-700 transition-colors hover:border-gmnimerah-500 hover:bg-gmnimerah-50"
-                >
-                  {s.label}
-                </button>
-              ))}
-              <button
-                type="button"
-                disabled={unggahKonten}
-                onClick={() => unggahGambarRef.current?.click()}
-                className="border border-gmnimerah-500 bg-kertas-100 px-2 py-1 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:bg-gmnimerah-50 disabled:opacity-50"
-              >
-                {unggahKonten ? "Mengunggah..." : "Gambar"}
-              </button>
-              <button
-                type="button"
-                onClick={sisipVideo}
-                className="border border-gmnimerah-500 bg-kertas-100 px-2 py-1 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:bg-gmnimerah-50"
-              >
-                Video
-              </button>
-            </div>
-          </div>
+        <div className="mt-8">
+          <span className="sr-only">Isi Artikel (Markdown)</span>
           <textarea
             required
             minLength={40}
@@ -374,8 +356,8 @@ const [bukaPratinjau, setBukaPratinjau] = useState(false);
             ref={kontenRef}
             value={konten}
             onChange={(e) => setKonten(e.target.value)}
-            className="w-full resize-y border-2 border-hitam-900 bg-white px-3 py-3 font-mono text-[13px] leading-relaxed text-hitam-900 outline-none transition-colors focus:border-gmnimerah-500"
-            placeholder={"Gunakan Markdown:\n## Judul Bagian\n\nParagraf pembuka...\n\n- poin pertama\n- poin kedua\n\n**teks tebal** atau _teks miring_\n\nSisip media: ![keterangan](url-gambar) atau :::youtube ID-VIDEO:::"}
+            className="min-h-[55vh] w-full resize-none border-0 bg-transparent px-0 py-0 font-sans text-lg leading-[1.85] text-hitam-800 outline-none placeholder:text-hitam-300"
+            placeholder={"Tulis di sini…\n\nGunakan Markdown sederhana:\n## Judul Bagian\n\nParagraf pembuka...\n\n- poin pertama\n- poin kedua\n\n**teks tebal** atau _teks miring_\n\nSisip media: ![keterangan](url-gambar) atau :::youtube ID-VIDEO:::"}
           />
           <input
             ref={unggahGambarRef}
@@ -390,19 +372,46 @@ const [bukaPratinjau, setBukaPratinjau] = useState(false);
       )}
 
       {pratinjau && (
-        <div className="border-4 border-hitam-900 bg-white p-5 md:p-8">
-          <h2 className="font-serif text-3xl font-extrabold leading-tight text-hitam-900">
+        <div className="mt-8">
+          <h2 className="font-serif text-3xl font-extrabold leading-tight text-hitam-900 md:text-4xl">
             {judul || "(tanpa judul)"}
           </h2>
+          {ringkasan.trim() && (
+            <p className="mt-3 border-l-4 border-gmnimerah-500 pl-3 font-serif text-base italic text-hitam-600">
+              {ringkasan}
+            </p>
+          )}
           <div
-            className="konten-artikel mt-6"
+            className="konten-artikel mt-8"
             dangerouslySetInnerHTML={{ __html: pratinjauHtml }}
           />
         </div>
       )}
+      </div>
 
-      <fieldset className="border-2 border-hitam-900 bg-kertas-100 p-4">
-        <legend className="px-2 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
+      {/* Drawer metadata — semua tombol mesin dikumpulkan di sini (gaya Medium) */}
+      <PanelPengaturan buka={panel} onTutup={() => setPanel(false)} judul="Metadata Artikel">
+        <label className="block">
+          <span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
+            Slug (URL)
+          </span>
+          <input
+            type="text"
+            value={slug}
+            onChange={(e) => {
+              setSlugDibuat(true);
+              setSlug(e.target.value);
+            }}
+            className="w-full border-2 border-hitam-900 bg-white px-3 py-2 font-mono text-sm text-hitam-900 outline-none focus:border-gmnimerah-500"
+            placeholder="slug-otomatis-dari-judul"
+          />
+          <span className="mt-1 block text-xs text-hitam-400">
+            Kosongkan untuk membuat otomatis. Hanya huruf kecil, angka, dan tanda hubung.
+          </span>
+        </label>
+
+      <fieldset className="border border-hitam-200 bg-white p-3">
+        <legend className="px-1 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
           Gambar Unggulan
         </legend>
         {gambarUtama ? (
@@ -447,7 +456,7 @@ const [bukaPratinjau, setBukaPratinjau] = useState(false);
         </label>
       </fieldset>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4">
         <label className="block">
           <span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
             Penulis
@@ -552,7 +561,7 @@ const [bukaPratinjau, setBukaPratinjau] = useState(false);
         )}
       </fieldset>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4">
         <label className="block">
           <span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
             Status Redaksi
@@ -583,7 +592,7 @@ const [bukaPratinjau, setBukaPratinjau] = useState(false);
         </label>
       </div>
 
-      <label className="flex cursor-pointer items-center gap-3 border-2 border-hitam-900 bg-kertas-100 px-4 py-3">
+      <label className="flex cursor-pointer items-center gap-3 border border-hitam-200 bg-white px-3 py-2.5">
         <input
           type="checkbox"
           checked={disematkan}
@@ -614,28 +623,36 @@ const [bukaPratinjau, setBukaPratinjau] = useState(false);
         </label>
       )}
 
-      <div className="flex flex-wrap items-center gap-3 border-t-2 border-hitam-900 pt-4">
-        <button
-          type="submit"
-          disabled={memuat}
-          className="bg-gmnimerah-500 px-6 py-3 font-sans text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-gmnimerah-600 disabled:opacity-50"
-        >
-          {memuat ? "Menyimpan..." : buat ? "Simpan Artikel" : "Simpan Perubahan"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setBukaPratinjau(true)}
-          className="border-2 border-hitam-900 bg-white px-6 py-3 font-sans text-sm font-bold uppercase tracking-wide text-hitam-900 transition-colors hover:bg-kertas-200"
-        >
-          Pratinjau
-        </button>
-        <button
-          type="button"
-          onClick={() => router.push("/admin/artikel")}
-          className="border-2 border-hitam-900 px-6 py-3 font-sans text-sm font-bold uppercase tracking-wide text-hitam-900 transition-colors hover:bg-kertas-200"
-        >
-          Batal
-        </button>
+      </PanelPengaturan>
+
+      {/* Bilah aksi bawah — lengket + blur, penanda gaya editor fokus konten */}
+      <div className="sticky bottom-0 z-30 -mx-3 mt-10 border-t border-hitam-200 bg-kertas-50/90 px-3 py-3 backdrop-blur-md sm:-mx-4 sm:px-4">
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            disabled={memuat}
+            className="bg-gmnimerah-500 px-5 py-2.5 font-sans text-[13px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-gmnimerah-600 disabled:opacity-50"
+          >
+            {memuat ? "Menyimpan…" : buat ? "Simpan Artikel" : "Simpan Perubahan"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setBukaPratinjau(true)}
+            className="border-2 border-hitam-900 bg-white px-5 py-2.5 font-sans text-[13px] font-bold uppercase tracking-wide text-hitam-900 transition-colors hover:bg-kertas-200"
+          >
+            Pratinjau
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/admin/artikel")}
+            className="border-2 border-hitam-900 px-5 py-2.5 font-sans text-[13px] font-bold uppercase tracking-wide text-hitam-900 transition-colors hover:bg-kertas-200"
+          >
+            Batal
+          </button>
+          <span className="ml-auto font-mono text-[10px] uppercase tracking-widest text-hitam-400">
+            {konten.trim() ? `${konten.trim().split(/\s+/).length} kata` : "0 kata"}
+          </span>
+        </div>
       </div>
 
       {bukaPratinjau && (

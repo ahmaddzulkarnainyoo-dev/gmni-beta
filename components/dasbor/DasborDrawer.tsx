@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { jalurAktif } from "@/lib/nav";
 import { TombolKeluar } from "@/components/ui/TombolKeluar";
 
-type ItemMenu = { label: string; href: string };
+type ItemMenu = { label: string; href: string; lencana?: number };
 
 /**
  * Navigasi dasbor kader seluler: hamburger di header membuka drawer
@@ -111,13 +111,24 @@ export function DasborDrawer({
                   jalurAktif(pathname, m.href) ? "page" : undefined
                 }
                 className={cn(
-                  "min-h-11 border-l-2 px-3 py-2.5 font-sans text-sm transition-colors",
+                  "flex min-h-11 items-center gap-2 border-l-2 px-3 py-2.5 font-sans text-sm transition-colors",
                   jalurAktif(pathname, m.href)
                     ? "border-gmnimerah-500 bg-gmnimerah-50 font-bold text-gmnimerah-700"
                     : "border-transparent font-medium text-hitam-700 hover:border-gmnimerah-500 hover:bg-kertas-100",
                 )}
               >
-                {m.label}
+                <span>{m.label}</span>
+                {m.lencana !== undefined && m.lencana > 0 && (
+                  <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-gmnimerah-500 px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-white">
+                    {m.lencana > 99 ? "99+" : m.lencana}
+                  </span>
+                )}
+                {m.lencana === 0 && (
+                  <span
+                    aria-hidden
+                    className="ml-auto inline-block h-1.5 w-1.5 rounded-full bg-gmnimerah-500/40"
+                  />
+                )}
               </Link>
             ))}
           </div>

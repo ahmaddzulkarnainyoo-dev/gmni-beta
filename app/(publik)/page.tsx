@@ -4,12 +4,13 @@ import { DividerTrisila } from "@/components/ui/DividerTrisila";
 import { KartuArtikel } from "@/components/ui/KartuArtikel";
 import { KickerLabel } from "@/components/ui/KickerLabel";
 import { Tombol } from "@/components/ui/Tombol";
-import { ambilTerbitTerbaru, bylineArtikel, fmtTanggal } from "@/lib/articles";
+import { ambilTerbitTerbaru, ambilTerpopuler, bylineArtikel, fmtTanggal } from "@/lib/articles";
 
 export const dynamic = "force-dynamic";
 
 export default async function Beranda() {
   const terbaru = await ambilTerbitTerbaru(9);
+  const terpopuler = await ambilTerpopuler(6);
   const unggulan = terbaru[0] ?? null;
   const lainnya = terbaru.slice(1, 7);
   const marhaenPinned =
@@ -104,6 +105,37 @@ export default async function Beranda() {
           </div>
         )}
       </section>
+
+      {terpopuler.length > 0 && (
+        <section className="mx-auto mt-14 max-w-6xl px-4">
+          <div className="flex items-end justify-between border-b-2 border-hitam-900 pb-3">
+            <div>
+              <KickerLabel>Apresiasi Pembaca</KickerLabel>
+              <h2 className="mt-1 font-serif text-2xl font-bold text-hitam-900 md:text-3xl">
+                Paling Diapresiasi
+              </h2>
+            </div>
+            <span className="font-mono text-[12px] font-semibold uppercase tracking-widest text-hitam-400">
+              👏 Tepuk tangan terbanyak
+            </span>
+          </div>
+          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {terpopuler.map((a) => (
+              <KartuArtikel
+                key={a.id}
+                judul={a.judul}
+                ringkasan={a.ringkasan ?? undefined}
+                kategori={{ nama: a.kategori.nama, slug: a.kategori.slug }}
+                tanggal={fmtTanggal(a.tanggalTerbit)}
+                penulis={bylineArtikel(a).nama}
+                gambar={a.gambarUtama}
+                slug={a.slug}
+                lencana={`👏 ${a.jumlahApresiasi} tepuk`}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="mx-auto mt-14 max-w-6xl px-4">
         <div className="relative overflow-hidden bg-hitam-900 p-8 text-kertas-100 md:p-12">

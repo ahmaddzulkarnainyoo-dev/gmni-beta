@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { LABEL_STATUS, GAYA_STATUS } from "@/lib/label-status";
 import { TombolAjukan } from "@/components/dasbor/TombolAjukan";
+import { TombolArsipTulisan } from "@/components/dasbor/TombolArsipTulisan";
 import { amanAsync } from "@/lib/kueri-aman";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +50,9 @@ export default async function HalamanTulisanSaya() {
   }
 
   const bisaDiajukan = (status: string) => status === "DRAFT" || status === "DIMINTA_REVISI";
+  const bisaDiajukanUlang = (status: string) => status === "DITOLAK" || status === "DIARSIPKAN";
+  const bisaDiarsipkan = (status: string) =>
+    status === "DRAFT" || status === "DIAJUKAN" || status === "DIMINTA_REVISI" || status === "DITOLAK";
   const bisaDikonfirmasi = (status: string) => status === "DIAJUKAN" || status === "SEDANG_DITINJAU";
 
   return (
@@ -141,6 +145,18 @@ export default async function HalamanTulisanSaya() {
                       <TombolAjukan id={a.id} />
                     </>
                   )}
+                  {bisaDiajukanUlang(a.status) && (
+                    <>
+                      <Link
+                        href={`/dasbor/tulis?id=${a.id}`}
+                        className="border-2 border-hitam-900 px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white"
+                      >
+                        Edit
+                      </Link>
+                      <TombolAjukan id={a.id} mode="AJUKAN_ULANG" />
+                    </>
+                  )}
+                  {bisaDiarsipkan(a.status) && <TombolArsipTulisan id={a.id} judul={a.judul} />}
                   {bisaDikonfirmasi(a.status) && (
                     <span className="py-1 font-mono text-[11px] uppercase tracking-wider text-hitam-400">
                       Menunggu redaksi

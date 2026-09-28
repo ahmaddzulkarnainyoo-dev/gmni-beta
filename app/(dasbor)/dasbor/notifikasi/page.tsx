@@ -18,6 +18,7 @@ type EntriNotifikasi = {
   aktorNama: string | null;
   artikelId: string;
   artikelJudul: string;
+  artikelSlug: string | null;
   statusArtikel: string;
 };
 
@@ -55,6 +56,8 @@ type EntriKotakMasuk = {
   isi: string;
   tipe: string;
   dibaca: boolean;
+  tautan: string | null;
+
   createdAt: Date;
 };
 
@@ -77,7 +80,7 @@ export default async function HalamanNotifikasi() {
           where: { userId: user.id },
           orderBy: { createdAt: "desc" },
           take: 40,
-          select: { id: true, judul: true, isi: true, tipe: true, dibaca: true, createdAt: true },
+          select: { id: true, judul: true, isi: true, tipe: true, dibaca: true, tautan: true, createdAt: true },
         }),
       [] as EntriKotakMasuk[],
     ),
@@ -100,7 +103,7 @@ export default async function HalamanNotifikasi() {
     });
     const petaJudul = new Map(
       (
-        await prisma.artikel.findMany({ where: { id: { in: ids } }, select: { id: true, judul: true, status: true } })
+        await prisma.artikel.findMany({ where: { id: { in: ids } }, select: { id: true, judul: true, slug: true, status: true } })
       ).map((a) => [a.id, a]),
     );
     return baris.map((b) => ({
@@ -110,6 +113,7 @@ export default async function HalamanNotifikasi() {
       aktorNama: b.aktor?.namaLengkap ?? null,
       artikelId: b.entitasId,
       artikelJudul: petaJudul.get(b.entitasId)?.judul ?? "(tulisan dihapus)",
+      artikelSlug: petaJudul.get(b.entitasId)?.slug ?? null,
       statusArtikel: petaJudul.get(b.entitasId)?.status ?? "-",
     }));
   }, []);
@@ -134,53 +138,84 @@ export default async function HalamanNotifikasi() {
         </div>
       ) : (
         <>
-          {kotakMasuk.length > 0 && (
-            <section className="mt-8">
-              <h2 className="font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-400">
-                Kotak Masuk <span className="text-gmnimerah-600">({kotakMasuk.length})</span>
+          <section className="mt-8">
+            <div className="flex flex-wrap items-end justify-between gap-2 border-b-2 border-hitam-900 pb-2">
+              <h2 className="font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900">
+                Pesan Masuk &amp; Interaksi Artikel
               </h2>
-              <ul className="mt-3 space-y-3">
-                {kotakMasuk.map((n) => {
-                  const tipe = judulTipe(n.tipe);
-                  return (
-                    <li
-                      key={n.id}
-                      className={cn(
-                        "bg-white p-4",
-                        n.dibaca ? "border border-hitam-200" : "border-2 border-hitam-900",
-                      )}
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          className={cn(
-                            "px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest",
-                            tipe.gaya,
+              <span className="font-mono text-[11px] uppercase tracking-wider text-hitam-400">
+                <span className="font-bold text-gmnimerah-600">{jumlahBelumDibaca}</span> belum dibaca
+              </span>
+            </div>
+
+            {kotakMasuk.length > 0 && (
+              <div className="mt-6">
+                <p className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-hitam-500">
+                  <span aria-hidden className="inline-block h-2 w-2 bg-gmnimerah-500" />
+                  Pesan Masuk <span className="text-gmnimerah-600">({kotakMasuk.length})</span>
+                </p>
+                <ul className="mt-3 space-y-3">
+                  {kotakMasuk.map((n) => {
+                    const tipe = judulTipe(n.tipe);
+                    const isiNotif = (
+                      <>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={cn(
+                              "px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest",
+                              tipe.gaya,
+                            )}
+                          >
+                            {tipe.judul}
+                          </span>
+                          {!n.dibaca && (
+                            <span className="border border-gmnimerah-500 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-gmnimerah-600">
+                              Baru
+                            </span>
                           )}
-                        >
-                          {tipe.judul}
-                        </span>
-                        {!n.dibaca && (
-                          <span className="border border-gmnimerah-500 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-gmnimerah-600">
-                            Baru
+                          <span className="font-mono text-[11px] uppercase tracking-wider text-hitam-400">
+                            {fmtTanggal(n.createdAt)}
+                          </span>
+                        </div>
+                        <p className="mt-2 font-serif text-base font-bold text-hitam-900">{n.judul}</p>
+                        <p className="mt-1 whitespace-pre-line text-sm text-hitam-500">{n.isi}</p>
+                        {n.tautan && (
+                          <span className="mt-2 inline-block font-mono text-[10px] font-bold uppercase tracking-widest text-gmnimerah-600">
+                            Buka {n.tautan} →
                           </span>
                         )}
-                        <span className="font-mono text-[11px] uppercase tracking-wider text-hitam-400">
-                          {fmtTanggal(n.createdAt)}
-                        </span>
-                      </div>
-                      <p className="mt-2 font-serif text-base font-bold text-hitam-900">{n.judul}</p>
-                      <p className="mt-1 whitespace-pre-line text-sm text-hitam-500">{n.isi}</p>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          )}
+                      </>
+                    );
+                    return (
+                      <li
+                        key={n.id}
+                        className={cn(
+                          "bg-white",
+                          n.dibaca ? "border border-hitam-200" : "border-2 border-hitam-900",
+                        )}
+                      >
+                        {n.tautan ? (
+                          <Link
+                            href={n.tautan}
+                            className="block p-4 transition-colors hover:bg-kertas-100"
+                          >
+                            {isiNotif}
+                          </Link>
+                        ) : (
+                          <div className="p-4">{isiNotif}</div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
 
-          <section className="mt-10">
-            <h2 className="font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-400">
-              Pembaruan Tulisan <span className="text-gmnimerah-600">({entri.length})</span>
-            </h2>
+            <div className="mt-8">
+              <p className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-hitam-500">
+                <span aria-hidden className="inline-block h-2 w-2 bg-hitam-900" />
+                Interaksi Artikel <span className="text-gmnimerah-600">({entri.length})</span>
+              </p>
             {entri.length === 0 ? (
               <p className="mt-3 text-sm italic text-hitam-400">
                 Belum ada pembaruan status tulisan.
@@ -197,14 +232,17 @@ export default async function HalamanNotifikasi() {
                       </div>
                       <p className="mt-2 font-serif text-base font-bold text-hitam-900">{n.artikelJudul}</p>
                       <p className="mt-1 text-sm text-hitam-500">{n.aktorNama ? `oleh ${n.aktorNama}` : "oleh redaksi"}{n.statusArtikel === "DIMINTA_REVISI" ? " - perbaiki tulisanmu." : "."}</p>
-                      {n.statusArtikel === "DIMINTA_REVISI" && (
+                      {n.statusArtikel === "DIMINTA_REVISI" ? (
                         <Link href={`/dasbor/tulis?id=${n.artikelId}`} className="mt-3 inline-block bg-gmnimerah-500 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-gmnimerah-600">Perbaiki Sekarang</Link>
-                      )}
+                      ) : n.artikelSlug ? (
+                        <Link href={`/artikel/${n.artikelSlug}`} className="mt-3 inline-block border-2 border-hitam-900 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white">Lihat Artikel →</Link>
+                      ) : null}
                     </li>
                   );
                 })}
               </ul>
             )}
+            </div>
           </section>
         </>
       )}

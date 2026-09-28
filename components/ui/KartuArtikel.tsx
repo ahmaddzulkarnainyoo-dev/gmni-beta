@@ -17,6 +17,7 @@ export function KartuArtikel({
   gambar,
   slug,
   varian = "standar",
+  lencana,
   className,
 }: {
   judul: string;
@@ -27,6 +28,8 @@ export function KartuArtikel({
   gambar?: string | null;
   slug?: string;
   varian?: "besar" | "standar" | "kompak";
+  /** Teks kecil di kaki kartu (mis. "👏 12 tepuk") — opsional. */
+  lencana?: string;
   className?: string;
 }) {
   const href = slug ? `/artikel/${slug}` : "#";
@@ -75,9 +78,10 @@ export function KartuArtikel({
             {ringkasan}
           </p>
         )}
-        {penulis && (
-          <p className="mt-auto font-mono text-[11px] uppercase tracking-wider text-hitam-400">
-            {penulis}
+        {(penulis || lencana) && (
+          <p className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-0.5 font-mono text-[11px] uppercase tracking-wider text-hitam-400">
+            {penulis && <span>{penulis}</span>}
+            {lencana && <span className="font-bold text-gmnimerah-600">{lencana}</span>}
           </p>
         )}
       </div>
