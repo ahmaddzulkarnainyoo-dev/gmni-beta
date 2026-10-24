@@ -10,6 +10,7 @@ import { TombolKeluar } from "@/components/ui/TombolKeluar";
 // Named export selain default/metadata dilarang Next 16 di layout - konstanta lokal.
 const MENU_DASBOR: Array<{ label: string; href: string }> = [
   { label: "Ringkasan", href: "/dasbor" },
+  { label: "Iuran Kas", href: "/dasbor/kas" },
   { label: "Tulis Artikel", href: "/dasbor/tulis" },
   { label: "Tulisan Saya", href: "/dasbor/tulisan-saya" },
   { label: "Pesan", href: "/dasbor/pesan" },

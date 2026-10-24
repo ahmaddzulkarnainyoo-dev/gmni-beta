@@ -44,6 +44,7 @@ const PERMISSIONS: Array<{ kode: string; deskripsi: string }> = [
   { kode: "laporan.tinjau", deskripsi: "Meninjau laporan penyalahgunaan" },
   { kode: "audit_log.lihat", deskripsi: "Melihat jejak audit" },
   { kode: "monetisasi.kelola", deskripsi: "Mengelola slot iklan & donasi" },
+  { kode: "kas.kelola", deskripsi: "Mengelola dan memverifikasi iuran kas kader" },
   {
     kode: "wilayah.kelola_kanal_daerah",
     deskripsi: "Mengelola kanal daerah/DPC (disiapkan untuk fase future)",

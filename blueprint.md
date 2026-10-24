@@ -121,7 +121,7 @@ Berdasarkan data ideologis yang diberikan (anti-imperialisme, anti-kapitalisme, 
 ├── /leaderboard                  ← papan peringkat mingguan (publik, read-only utk non-kader)
 │
 ├── /login
-├── /daftar                       ← hanya aktif via link undangan admin (invite token)
+├── /daftar                       ← form pendaftaran kader; token undangan opsional
 ├── /lupa-password
 │
 ├── /profil/[username]            ← profil publik kader (terlihat oleh semua, DM hanya sesama kader)
@@ -132,6 +132,7 @@ Berdasarkan data ideologis yang diberikan (anti-imperialisme, anti-kapitalisme, 
 │   ├── /dasbor/pesan               ← inbox DM
 │   ├── /dasbor/notifikasi
 │   ├── /dasbor/pencapaian          ← badge & histori leaderboard pribadi
+│   ├── /dasbor/kas                 ← pengajuan iuran mingguan & status pembayaran pribadi
 │   └── /dasbor/pengaturan          ← termasuk toggle "sembunyikan profil dari pencarian/DM"
 │
 └── /admin (khusus admin/role dgn izin)
@@ -146,8 +147,15 @@ Berdasarkan data ideologis yang diberikan (anti-imperialisme, anti-kapitalisme, 
     ├── /admin/halaman                ← edit konten halaman statis (Tentang, Redaksi, dll — no-code)
     ├── /admin/tampilan               ← pengaturan tema/branding dasar
     ├── /admin/iklan-donasi           ← kelola slot iklan/donasi
+    ├── /admin/kas                   ← rekap, verifikasi, input tunai & ekspor iuran kader
     └── /admin/pengaturan             ← konfigurasi umum situs
 ```
+
+### 4.1 Alur Registrasi & Login
+- Tombol **Daftar** membuka form pendaftaran standar. Form yang sama tetap tersedia bila pengguna datang melalui tautan undangan yang tidak valid atau sudah dipakai; undangan yang valid dapat mengisi konteks pengundang.
+- Pendaftaran terbuka membuat akun berstatus **PENDING** sampai diverifikasi Admin Redaksi. Tautan undangan valid tetap didukung sesuai mekanisme yang berlaku.
+- Admin dan kader memakai **satu halaman dan satu mekanisme login**. Setelah autentikasi berhasil, tujuan diarahkan berdasarkan role/permission (admin ke `/admin`, kader ke `/dasbor`); tidak ada jalur login admin terpisah.
+- Perubahan selama implementasi yang menyentuh alur ini harus terlebih dahulu dicatat di blueprint agar dokumen tetap menjadi sumber kebenaran.
 
 ---
 
@@ -168,7 +176,9 @@ Sistem role **tidak boleh hardcoded**. Dibangun sebagai:
 | **Pembaca Terdaftar** *(opsional, jika nanti dibuka)* | Akun non-kader | Hanya baca, komentar (dengan verifikasi), tidak bisa menulis/DM |
 
 ### 5.3 Struktur Permission (contoh granularitas)
-`artikel.buat`, `artikel.edit_milik_sendiri`, `artikel.edit_semua`, `artikel.publish`, `artikel.hapus`, `artikel.jadwalkan`, `komentar.moderasi`, `pengguna.undang`, `pengguna.suspend`, `role.kelola`, `halaman_statis.edit`, `leaderboard.override`, `laporan.tinjau`, `audit_log.lihat`, `wilayah.kelola_kanal_daerah` *(disiapkan untuk Fase future: DPC/kanal daerah)*.
+`artikel.buat`, `artikel.edit_milik_sendiri`, `artikel.edit_semua`, `artikel.publish`, `artikel.hapus`, `artikel.jadwalkan`, `komentar.moderasi`, `pengguna.undang`, `pengguna.suspend`, `role.kelola`, `halaman_statis.edit`, `leaderboard.override`, `laporan.tinjau`, `audit_log.lihat`, `kas.kelola` *(mengelola, memverifikasi, mencatat pembayaran tunai, dan mengekspor rekap iuran kas)*, `wilayah.kelola_kanal_daerah` *(disiapkan untuk Fase future: DPC/kanal daerah)*.
+
+Permission `kas.kelola` diberikan kepada Super Admin dan dapat diberikan melalui `/admin/peran` kepada Editor atau role khusus **Bendahara**. Akses ke `/admin/kas`, setiap endpoint terkait, dan item navigasi wajib mengikuti permission ini, bukan hanya nama role.
 
 ### 5.4 Ekspansi ke depan (arsitektur harus mendukung, walau belum diaktifkan di Fase 1)
 Struktur data role & permission dirancang **multi-tenant siap pakai** agar nanti bisa dibuat konsep **"kanal daerah" (DPC)** dengan admin lokal per cabang, tanpa migrasi database besar-besaran — cukup aktifkan fitur & buat role baru lewat UI yang sudah ada.
@@ -286,6 +296,35 @@ id, posisi (header/sidebar/inline-artikel/footer), tipe (iklan/donasi),
 gambar/kode_embed, tautan_tujuan, aktif (boolean), tanggal_mulai, tanggal_selesai
 ```
 
+### 7.12 `KonfigurasiIuranKas`
+```
+id (singleton), nominal_per_minggu (Rupiah), diubah_oleh (FK → User),
+tanggal_diperbarui
+```
+Nominal berlaku sebagai acuan untuk pengajuan baru. Nilai nominal yang sudah ditetapkan pada minggu/pengajuan lama harus tetap tersimpan sebagai snapshot agar perubahan tarif tidak mengubah histori pembayaran.
+
+### 7.13 `IuranKas`, `PembayaranKas` & `BuktiKas`
+```
+IuranKas: id, kader_id (FK → User), minggu_mulai (Senin WIB),
+  nominal (snapshot Rupiah), status (BELUM_BAYAR/MENUNGGU_VERIFIKASI/LUNAS),
+  tanggal_lunas, UNIQUE(kader_id, minggu_mulai)
+
+PembayaranKas: id, kader_id (FK → User), tanggal_bayar, jumlah_minggu,
+  total_nominal, metode (TRANSFER/TUNAI), catatan,
+  status_verifikasi (MENUNGGU_VERIFIKASI/DISETUJUI/DITOLAK),
+  diverifikasi_oleh (FK opsional → User), diverifikasi_at, alasan_penolakan,
+  dibuat_at
+
+AlokasiIuranKas: pembayaran_id (FK → PembayaranKas),
+  iuran_kas_id (FK → IuranKas), nominal (snapshot), UNIQUE(pembayaran_id, iuran_kas_id)
+Relasi many-to-many mempertahankan riwayat beberapa pengajuan (termasuk
+yang ditolak) untuk minggu yang sama.
+
+BuktiKas: id, pembayaran_id (FK → PembayaranKas), storage_key (path privat),
+  nama_file, tipe_konten, ukuran_byte, diunggah_at
+```
+Satu pengajuan dapat mengalokasikan pembayaran untuk minggu berjalan dan sejumlah minggu ke depan tanpa batas maksimum jumlah minggu. Setiap minggu kader hanya boleh memiliki satu alokasi aktif yang menunggu verifikasi atau sudah lunas; validasi harus atomik untuk mencegah pengajuan bersamaan yang menggandakan minggu. Pembayaran yang ditolak tetap tersimpan sebagai riwayat, tetapi alokasi minggu dibuka kembali untuk pengajuan baru. `BELUM_BAYAR` dan `MENUNGGAK` dapat dibedakan pada tampilan setelah tenggat minggu berlalu; usulan default tenggat adalah akhir minggu berjalan dalam zona WIB, dan minggu mendatang yang belum dibayar bukan tunggakan. Bukti disimpan privat dan hanya dapat diakses oleh kader pemilik serta petugas yang berhak.
+
 ---
 
 ## 8. SPESIFIKASI MODUL FITUR
@@ -358,6 +397,18 @@ Kombinasi tiga kanal, dikirim bersamaan untuk event penting (status artikel, ada
 - Slot iklan fleksibel: header banner, sidebar, native inline-artikel, footer — dikelola admin lewat `/admin/iklan-donasi` (upload gambar/kode embed, atur jadwal tayang) **tanpa developer**.
 - Slot donasi: tombol/banner "Dukung Perjuangan Ini" dengan tautan ke platform donasi (mis. Kitabisa/transfer manual/QRIS) — bisa diaktifkan kapan saja lewat dashboard yang sama.
 - Sistem **siap pakai** sejak awal (field database sudah ada), meski slot-nya belum harus terisi konten di hari peluncuran.
+
+### 8.11 Iuran Kas Kader
+- **Sifat iuran:** mingguan, tanpa batas jumlah minggu yang dapat dibayar sekaligus. Kader dapat membayar minggu berjalan atau mengalokasikan pembayaran ke beberapa minggu mendatang.
+- **Nominal:** nominal per minggu dikelola melalui konfigurasi kas oleh petugas berpermission `kas.kelola`; nominal yang berlaku disalin ke catatan minggu/pengajuan sebagai snapshot. Total pengajuan dihitung dari jumlah minggu × nominal yang berlaku.
+- **Dashboard kader `/dasbor/kas`:** tampilkan status per minggu dan riwayat pengajuan. Form mencakup jumlah minggu, tanggal pembayaran, nominal/total yang dihitung, unggah bukti transfer/foto, dan catatan opsional. Kader hanya dapat melihat pengajuan, bukti, dan alokasi miliknya.
+- **Dashboard admin/bendahara `/admin/kas`:** tampilkan rekap per kader dalam matrix minggu kalender untuk tahun yang dipilih. Sediakan filter periode, kader, cabang/DPC, komisariat, dan status; tampilkan status yang dapat dibedakan secara visual maupun teks: lunas, menunggu verifikasi, belum bayar, menunggak untuk minggu yang telah lewat, serta minggu mendatang.
+- **Verifikasi:** petugas dengan `kas.kelola` dapat meninjau bukti dan menyetujui atau menolak pengajuan. Penolakan wajib menyimpan alasan; minggu yang ditolak kembali tersedia untuk pengajuan, sementara riwayat dan bukti lama tetap tercatat. Persetujuan mengubah seluruh alokasi minggu terkait menjadi lunas secara atomik.
+- **Pembayaran tunai:** Bendahara dapat mencatat pembayaran langsung dengan kader, minggu yang dibayar, nominal, tanggal, dan catatan; catatan harus menyimpan petugas pencatat dan tidak memerlukan unggah bukti transfer.
+- **Ekspor:** ekspor rekap CSV untuk periode terpilih dengan status per minggu dan jumlah total. Lindungi sel spreadsheet dari formula injection dan batasi akses ekspor ke `kas.kelola`.
+- **Keamanan & audit:** semua operasi memvalidasi sesi dan permission pada server. Bukti pembayaran disimpan di object storage privat; unduhan hanya melalui akses terotorisasi/signed URL yang terbatas. Pengajuan, perubahan status, alasan penolakan, input tunai, perubahan nominal, dan ekspor dicatat sesuai kebijakan audit.
+- **Konfigurasi storage:** bucket `bukti-kas` (atau nama yang ditetapkan melalui `SUPABASE_KAS_BUCKET`) harus dibuat privat di Supabase Storage. Server memakai `SUPABASE_SERVICE_ROLE_KEY`; kunci ini tidak boleh diekspos ke client atau diberi prefix `NEXT_PUBLIC_`. Tautan bukti bersifat sementara dan hanya dibuat setelah pemeriksaan hak akses.
+- **Status matrix:** `MENUNGGU_VERIFIKASI` dan `LUNAS` berasal dari status alokasi/pengajuan. `BELUM_BAYAR` dan `MENUNGGAK` ditentukan dari minggu dan tenggat yang ditetapkan; minggu mendatang tidak ditandai menunggak.
 
 ---
 
@@ -447,6 +498,13 @@ Dipilih berdasarkan: kecocokan dengan Vercel (preferensi hosting), kebutuhan SEO
 - Optimasi performa lanjutan, search upgrade jika diperlukan.
 - Persiapan ekspansi "kanal daerah/DPC" (jika organisasi memutuskan lanjut ke sana).
 
+### **FASE 5 — Operasional Organisasi: Iuran Kas Kader**
+- Konfigurasi nominal iuran mingguan dan skema data pembayaran/alokasi/bukti.
+- Pengajuan pembayaran mingguan dan multi-minggu ke depan oleh kader, termasuk unggah bukti privat.
+- Verifikasi pembayaran, penolakan dengan alasan, pencatatan pembayaran tunai, dan audit oleh role yang memiliki `kas.kelola`.
+- Matrix rekap tahunan serta ekspor CSV per periode untuk Admin/Bendahara.
+- **Output Fase 5:** alur kas mingguan dapat ditelusuri dari pengajuan sampai verifikasi dan rekap.
+
 ---
 
 ## 12. KONTEN SEED AWAL
@@ -485,7 +543,3 @@ Semua keputusan di Bagian 1–12 dokumen ini adalah hasil klarifikasi bertahap d
 ---
 
 *Dokumen ini adalah sumber kebenaran tunggal (single source of truth) untuk proyek Suara Marhaen. Update dokumen ini setiap kali ada keputusan baru yang mengubah scope.*
-
-perubahan selama ngoding.
-ketika user mencet daftar tampil form seperti biasa.
-kedua jalur login admin sama dengan akun biasa.

@@ -113,6 +113,26 @@ enum StatusDonasi {
   DITOLAK /// spam/tidak valid, disembunyikan dari publik
 }
 
+/// Status alokasi kewajiban kas per kader dan minggu.
+enum StatusIuranKas {
+  BELUM_BAYAR
+  MENUNGGU_VERIFIKASI
+  LUNAS
+}
+
+/// Hasil pemeriksaan satu pengajuan pembayaran kas.
+enum StatusVerifikasiKas {
+  MENUNGGU_VERIFIKASI
+  DISETUJUI
+  DITOLAK
+}
+
+/// Kanal penerimaan pembayaran kas kader.
+enum MetodePembayaranKas {
+  TRANSFER
+  TUNAI
+}
+
 // ============================================================
 // 7.1 USER — kader terverifikasi
 // ============================================================
@@ -171,6 +191,12 @@ model User {
   ajusPoinDiterima  AjusPoin[]      @relation("AjusPoinUser")
   ajusPoinDiberikan AjusPoin[]      @relation("AjusPoinOleh")
   konfigDonasiDiubah KonfigurasiDonasi[] @relation("KonfigDonasiOleh")
+  konfigKasDiubah    KonfigurasiKas[] @relation("KonfigKasDiubahOleh")
+  tarifKasDibuat    KonfigurasiIuranKas[] @relation("TarifKasDibuatOleh")
+  iuranKas          IuranKas[] @relation("IuranKasKader")
+  pembayaranKas     PembayaranKas[] @relation("PembayaranKasKader")
+  pembayaranKasDicatat PembayaranKas[] @relation("PembayaranKasDicatatOleh")
+  pembayaranKasDiverifikasi PembayaranKas[] @relation("PembayaranKasDiverifikasiOleh")
   pengaturanSitusDiubah PengaturanSitus[] @relation("PengaturanSitusOleh")
   tokenPemulihan    TokenPemulihan[]
   pemulihanDibuat   TokenPemulihan[] @relation("PemulihanDibuatOleh")
@@ -644,6 +670,19 @@ model KonfigurasiDonasi {
   updatedAt      DateTime @updatedAt
 }
 
+/// Konfigurasi rekening & QRIS khusus pembayaran iuran kas kader.
+/// Single-row (id tetap "utama") dan terpisah dari konfigurasi donasi.
+model KonfigurasiKas {
+  id           String   @id @default("utama")
+  bankNama     String
+  rekeningNomor String
+  atasNama     String
+  qrisUrl      String?
+  diubahOlehId String?
+  diubahOleh   User?    @relation("KonfigKasDiubahOleh", fields: [diubahOlehId], references: [id], onDelete: SetNull)
+  updatedAt    DateTime @updatedAt
+}
+
 // ============================================================
 // PENGATURAN SITUS — konfigurasi umum (single-row, id "utama").
 // ============================================================
@@ -659,6 +698,91 @@ model PengaturanSitus {
   diubahOlehId     String?
   diubahOleh       User?    @relation("PengaturanSitusOleh", fields: [diubahOlehId], references: [id], onDelete: SetNull)
   updatedAt        DateTime @updatedAt
+}
+
+// ============================================================
+// IURAN KAS KADER — tarif efektif, kewajiban mingguan, pengajuan & bukti.
+// ============================================================
+
+/// Tarif yang berlaku mulai pekan tertentu; versi lama tidak ditimpa.
+model KonfigurasiIuranKas {
+  id           String   @id @default(cuid())
+  nominal      Int
+  berlakuMulai DateTime @db.Date
+  dibuatOlehId String?
+  dibuatOleh   User?    @relation("TarifKasDibuatOleh", fields: [dibuatOlehId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  @@unique([berlakuMulai])
+}
+
+/// Satu alokasi kewajiban per kader per pekan; minggu yang belum dibuat
+/// direpresentasikan sebagai BELUM_BAYAR pada matrix.
+model IuranKas {
+  id         String        @id @default(cuid())
+  kaderId    String
+  kader      User          @relation("IuranKasKader", fields: [kaderId], references: [id], onDelete: Cascade)
+  mingguMulai DateTime     @db.Date
+  nominal    Int
+  status     StatusIuranKas @default(BELUM_BAYAR)
+  tanggalLunas DateTime?
+  alokasi    AlokasiIuranKas[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@unique([kaderId, mingguMulai])
+  @@index([mingguMulai, status])
+  @@index([kaderId, status])
+}
+
+/// Satu pembayaran mencakup satu atau lebih minggu milik kader yang sama.
+model PembayaranKas {
+  id                 String              @id @default(cuid())
+  kaderId            String
+  kader              User                @relation("PembayaranKasKader", fields: [kaderId], references: [id], onDelete: Cascade)
+  dicatatOlehId      String
+  dicatatOleh        User                @relation("PembayaranKasDicatatOleh", fields: [dicatatOlehId], references: [id], onDelete: Restrict)
+  tanggalBayar       DateTime
+  jumlahMinggu       Int
+  totalNominal       Int
+  metode             MetodePembayaranKas
+  catatan            String?             @db.Text
+  status             StatusVerifikasiKas @default(MENUNGGU_VERIFIKASI)
+  diverifikasiOlehId String?
+  diverifikasiOleh   User?               @relation("PembayaranKasDiverifikasiOleh", fields: [diverifikasiOlehId], references: [id], onDelete: SetNull)
+  diverifikasiAt     DateTime?
+  alasanPenolakan    String?             @db.Text
+  alokasi            AlokasiIuranKas[]
+  bukti              BuktiKas?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([status, createdAt])
+  @@index([kaderId, createdAt])
+}
+
+/// Jejak alokasi historis; pengajuan ditolak tidak menghapus relasi ini.
+model AlokasiIuranKas {
+  pembayaranId String
+  pembayaran   PembayaranKas @relation(fields: [pembayaranId], references: [id], onDelete: Cascade)
+  iuranKasId   String
+  iuranKas     IuranKas      @relation(fields: [iuranKasId], references: [id], onDelete: Cascade)
+  nominal      Int
+
+  @@id([pembayaranId, iuranKasId])
+  @@index([iuranKasId])
+}
+
+/// Metadata object storage privat; konten tidak pernah disajikan sebagai URL publik.
+model BuktiKas {
+  id           String        @id @default(cuid())
+  pembayaranId String        @unique
+  pembayaran   PembayaranKas @relation(fields: [pembayaranId], references: [id], onDelete: Cascade)
+  storageKey   String        @unique
+  namaFile     String
+  tipeKonten   String
+  ukuranByte   Int
+  diunggahAt   DateTime      @default(now())
 }
 
 // ============================================================

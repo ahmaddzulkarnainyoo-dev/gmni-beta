@@ -33,14 +33,16 @@ export async function POST(request: Request) {
 
   const isAdmin = !!user.roleNama && ROLES_ADMIN.includes(user.roleNama);
   const bolehKader = user.permissions.includes("profil.edit_sendiri");
+  const bolehKas = jenis === "kas" && user.permissions.includes("kas.kelola");
   const bolehUnggah =
     isAdmin ||
+    bolehKas ||
     (jenis === "profil" && bolehKader) ||
     // Q3: kader dapat mengunggah gambar untuk isi artikelnya (maks 2 MB).
     (jenis === "artikel" && bolehKader);
   if (!bolehUnggah) {
     return NextResponse.json(
-      { error: "Hanya Super Admin atau Editor yang dapat mengunggah media." },
+        { error: "Tidak memiliki izin untuk mengunggah media ini." },
       { status: 403 },
     );
   }
@@ -90,7 +92,7 @@ export async function POST(request: Request) {
           : file.type === "image/webp"
             ? "webp"
             : "gif";
-    const folder = jenis === "profil" ? "profil" : "artikel";
+    const folder = jenis === "profil" ? "profil" : jenis === "kas" ? "kas" : "artikel";
     const nama = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ekstensi}`;
 
     const bytes = Buffer.from(await file.arrayBuffer());

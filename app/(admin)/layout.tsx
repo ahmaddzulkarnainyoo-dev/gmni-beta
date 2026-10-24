@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { requireRole } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { requireAuthUser } from "@/lib/session";
 import { LogoGMNI } from "@/components/brand/LogoGMNI";
 import { KickerLabel } from "@/components/ui/KickerLabel";
 import { AdminDrawer } from "@/components/admin/AdminDrawer";
@@ -24,6 +25,10 @@ const MENU_ADMIN: Array<{
     ],
   },
   {
+    grup: "Keuangan",
+    item: [{ label: "Rekap Iuran Kas", href: "/admin/kas" }],
+  },
+  {
     grup: "Organisasi",
     item: [
       { label: "Pengguna & Undangan", href: "/admin/pengguna" },
@@ -44,15 +49,31 @@ const MENU_ADMIN: Array<{
 export default async function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // Gate role (Fase 2): /admin/* hanya untuk Super Admin & Editor (blueprint 5.2).
-  // Check permission di masing-masing halaman tetap dipertahankan (defense-in-depth).
-  await requireRole("Super Admin", "Editor");
+  const user = await requireAuthUser();
+  const isAdmin = user.roleNama === "Super Admin" || user.roleNama === "Editor";
+  const punyaAksesKas = user.permissions.includes("kas.kelola");
+  if (!isAdmin && !punyaAksesKas) redirect("/");
+  const menu = isAdmin
+    ? MENU_ADMIN.map((kelompok) => ({
+        ...kelompok,
+        item: kelompok.item.filter(
+          (item) => item.href !== "/admin/kas" || punyaAksesKas,
+        ),
+      })).filter((kelompok) => kelompok.item.length > 0)
+    : [
+        {
+          grup: "Keuangan",
+          item: MENU_ADMIN.flatMap((kelompok) => kelompok.item).filter(
+            (item) => item.href === "/admin/kas",
+          ),
+        },
+      ];
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="bg-hitam-900 text-white">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4">
-          <AdminDrawer menu={MENU_ADMIN} />
+          <AdminDrawer menu={menu} />
           <LogoGMNI warne="putih" className="hidden h-8 w-8 sm:block" />
           <p className="font-serif text-lg font-bold">
             info{" "}
@@ -74,7 +95,7 @@ export default async function AdminLayout({
       <div className="mx-auto flex w-full max-w-7xl flex-1 gap-6 px-4 py-6">
         <aside className="hidden w-56 shrink-0 md:block">
           <nav aria-label="Menu admin" className="sticky top-4">
-            {MENU_ADMIN.map((kelompok) => (
+            {menu.map((kelompok) => (
               <div key={kelompok.grup} className="mb-4">
                 <KickerLabel warne="hitam" className="mb-1.5">
                   {kelompok.grup}
