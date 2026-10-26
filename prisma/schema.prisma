@@ -738,6 +738,7 @@ model IuranKas {
 /// Satu pembayaran mencakup satu atau lebih minggu milik kader yang sama.
 model PembayaranKas {
   id                 String              @id @default(cuid())
+  kodeAnonim         String              @unique @default(cuid())
   kaderId            String
   kader              User                @relation("PembayaranKasKader", fields: [kaderId], references: [id], onDelete: Cascade)
   dicatatOlehId      String

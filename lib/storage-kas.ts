@@ -1,10 +1,12 @@
+import { pastikanSemuaBucketStorage } from "@/lib/storage";
+
 const MAX_BUKTI_BYTE = 5 * 1024 * 1024;
 const TIPE_BUKTI = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 function konfigurasiStorage() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const bucket = process.env.SUPABASE_KAS_BUCKET ?? "bukti-kas";
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const bucket = process.env.SUPABASE_KAS_BUCKET?.trim() || "bukti-kas";
   if (!url || !key) {
     throw new Error(
       "Storage bukti kas belum dikonfigurasi. Atur NEXT_PUBLIC_SUPABASE_URL dan SUPABASE_SERVICE_ROLE_KEY.",
@@ -77,6 +79,7 @@ export async function unggahBuktiKas(
   tipeKonten: string,
 ): Promise<void> {
   const { url, key, bucket } = konfigurasiStorage();
+  await pastikanSemuaBucketStorage();
   const res = await fetch(
     `${url}/storage/v1/object/${bucket}/${jalurEncoded(jalur)}`,
     {

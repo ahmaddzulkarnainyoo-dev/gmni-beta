@@ -52,15 +52,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supaUrl || !serviceRole) {
-    return NextResponse.json(
-      { error: "Storage server belum dikonfigurasi." },
-      { status: 500 },
-    );
-  }
-
   try {
     const form = await request.formData();
     const file = form.get("file");
@@ -100,8 +91,8 @@ export async function POST(request: Request) {
     const folder = jenis === "profil" ? "profil" : jenis === "kas" ? "kas" : "artikel";
     const bucket =
       jenis === "profil"
-        ? process.env.SUPABASE_AVATAR_BUCKET ?? "avatars"
-        : process.env.SUPABASE_STORAGE_BUCKET ?? "artikel";
+        ? process.env.SUPABASE_AVATAR_BUCKET?.trim() || "avatars"
+        : process.env.SUPABASE_STORAGE_BUCKET?.trim() || "artikel";
     const nama = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ekstensi}`;
 
     const bytes = Buffer.from(await file.arrayBuffer());

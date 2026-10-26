@@ -33,6 +33,7 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
+  const lihatPenuh = user.roleNama === "Super Admin" && url.searchParams.get("mode") === "penuh";
   let tahun: number;
   try {
     tahun = validasiTahun(url.searchParams.get("tahun"));
@@ -102,6 +103,8 @@ export async function GET(request: Request) {
         },
         orderBy: { createdAt: "asc" },
         include: {
+          // Relasi internal dipakai server untuk verifikasi; hanya dikirim bila
+          // Super Admin secara eksplisit membuka mode rekap penuh.
           kader: {
             select: {
               namaLengkap: true,
@@ -135,7 +138,12 @@ export async function GET(request: Request) {
         ]),
     );
     const matrix = pengguna.map((kader) => ({
-      ...kader,
+      id: kader.id,
+      namaLengkap: lihatPenuh ? kader.namaLengkap : `Kader Anonim #${kader.id.slice(-6).toUpperCase()}`,
+      username: lihatPenuh ? kader.username : "",
+      nim: lihatPenuh ? kader.nim : null,
+      cabangDpc: lihatPenuh ? kader.cabangDpc : null,
+      komisariat: lihatPenuh ? kader.komisariat : null,
       minggu: minggu.map((mingguMulai) => {
         const key = `${kader.id}:${tanggalDateOnly(mingguMulai)}`;
         const catatan = iuranPerMinggu.get(key);
@@ -153,6 +161,8 @@ export async function GET(request: Request) {
     const agregat = (status: "DISETUJUI" | "MENUNGGU_VERIFIKASI") => pembayaranAgregat.find((item) => item.status === status);
     return NextResponse.json({
       ok: true,
+      bolehRekapPenuh: user.roleNama === "Super Admin",
+      rekapPenuh: lihatPenuh,
       tahun,
       minggu: minggu.map(tanggalDateOnly),
       matrix,
@@ -164,7 +174,8 @@ export async function GET(request: Request) {
       })),
       pembayaran: pembayaran.map((item) => ({
         id: item.id,
-        kader: item.kader,
+        labelAnonim: `Kader Anonim #${item.kodeAnonim}`,
+        ...(lihatPenuh ? { kader: item.kader } : {}),
         tanggalBayar: tanggalDateOnly(item.tanggalBayar),
         jumlahMinggu: item.jumlahMinggu,
         totalNominal: item.totalNominal,

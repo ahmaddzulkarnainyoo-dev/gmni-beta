@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   if (!user.permissions.includes("kas.kelola")) return Response.json({ error: "Izin kas.kelola diperlukan." }, { status: 403 });
 
   const url = new URL(request.url);
+  const lihatPenuh = user.roleNama === "Super Admin" && url.searchParams.get("mode") === "penuh";
   const tahun = Number(url.searchParams.get("tahun") ?? tanggalWib(new Date()).slice(0, 4));
   if (!Number.isInteger(tahun) || tahun < 1900 || tahun > 9998) return Response.json({ error: "Tahun ekspor tidak valid." }, { status: 400 });
   const cari = url.searchParams.get("q")?.trim().slice(0, 100) ?? "";
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
       return nominal === null ? status : `${status} (${nominal})`;
     });
     if (statusDiminta && !values.some((value) => value.startsWith(statusDiminta))) return [];
-    return [{ Nama: anggota.namaLengkap, Username: anggota.username, NIM: anggota.nim ?? "", DPC: anggota.cabangDpc ?? "", Komisariat: anggota.komisariat ?? "", ...Object.fromEntries(minggu.map((date, index) => [tanggalDateOnly(date), values[index]])), "Minggu Lunas": lunas, "Total Nominal Lunas": totalLunas }];
+    return [{ Identitas: lihatPenuh ? anggota.namaLengkap : `Kader Anonim #${anggota.id.slice(-6).toUpperCase()}`, ...(lihatPenuh ? { Username: anggota.username, NIM: anggota.nim ?? "", DPC: anggota.cabangDpc ?? "", Komisariat: anggota.komisariat ?? "" } : {}), ...Object.fromEntries(minggu.map((date, index) => [tanggalDateOnly(date), values[index]])), "Minggu Lunas": lunas, "Total Nominal Lunas": totalLunas }];
   });
   const workbook = XLSX.utils.book_new();
   const sheet = XLSX.utils.json_to_sheet(rows);

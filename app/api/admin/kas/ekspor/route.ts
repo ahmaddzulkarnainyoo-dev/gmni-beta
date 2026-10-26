@@ -26,6 +26,7 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
+  const lihatPenuh = user.roleNama === "Super Admin" && url.searchParams.get("mode") === "penuh";
   const tahun = Number(
     url.searchParams.get("tahun") ?? tanggalWib(new Date()).slice(0, 4),
   );
@@ -103,11 +104,8 @@ export async function GET(request: Request) {
       ]),
     );
     const header = [
-      "Nama",
-      "Username",
-      "NIM",
-      "DPC",
-      "Komisariat",
+      "Identitas",
+      ...(lihatPenuh ? ["Username", "NIM", "DPC", "Komisariat"] : []),
       ...minggu.map((tanggal) => tanggalDateOnly(tanggal)),
       "Minggu Lunas",
       "Total Nominal Lunas",
@@ -132,11 +130,8 @@ export async function GET(request: Request) {
       }
       barisCsv.push(
         [
-          anggota.namaLengkap,
-          anggota.username,
-          anggota.nim ?? "",
-          anggota.cabangDpc ?? "",
-          anggota.komisariat ?? "",
+          lihatPenuh ? anggota.namaLengkap : `Kader Anonim #${anggota.id.slice(-6).toUpperCase()}`,
+          ...(lihatPenuh ? [anggota.username, anggota.nim ?? "", anggota.cabangDpc ?? "", anggota.komisariat ?? ""] : []),
           ...statusMinggu,
           lunas,
           totalLunas,

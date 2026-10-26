@@ -25,7 +25,8 @@ type KaderMatrix = {
 type TarifKasRow = { id: string; nominal: number; berlakuMulai: string };
 type PengajuanKas = {
   id: string;
-  kader: {
+  labelAnonim: string;
+  kader?: {
     namaLengkap: string;
     username: string;
     cabangDpc: string | null;
@@ -40,6 +41,8 @@ type PengajuanKas = {
   minggu: Array<{ mulai: string; nominal: number }>;
 };
 type DataKasAdmin = {
+  bolehRekapPenuh: boolean;
+  rekapPenuh: boolean;
   tahun: number;
   minggu: string[];
   matrix: KaderMatrix[];
@@ -61,8 +64,10 @@ type DataKasAdmin = {
 async function ambilDataKasAdmin(
   tahun: number,
   filter: { q: string; cabang: string; komisariat: string },
+  modePenuh: boolean,
 ): Promise<DataKasAdmin> {
   const params = new URLSearchParams({ tahun: String(tahun) });
+  if (modePenuh) params.set("mode", "penuh");
   if (filter.q) params.set("q", filter.q);
   if (filter.cabang) params.set("cabang", filter.cabang);
   if (filter.komisariat) params.set("komisariat", filter.komisariat);
@@ -119,6 +124,7 @@ export function PanelKasAdmin() {
   const [cabang, setCabang] = useState("");
   const [komisariat, setKomisariat] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusTampilanKas | "">("");
+  const [modePenuh, setModePenuh] = useState(false);
   const [filter, setFilter] = useState({ q: "", cabang: "", komisariat: "" });
   const [nominal, setNominal] = useState("");
   const [tarifMulai, setTarifMulai] = useState(() =>
@@ -134,7 +140,7 @@ export function PanelKasAdmin() {
 
   const muatData = useCallback(async (tahunMuat = tahun, filterMuat = filter) => {
     try {
-      const body = await ambilDataKasAdmin(tahunMuat, filterMuat);
+      const body = await ambilDataKasAdmin(tahunMuat, filterMuat, modePenuh);
       setEror(null);
       setData(body);
       setKaderId((sebelumnya) =>
@@ -147,11 +153,11 @@ export function PanelKasAdmin() {
     } finally {
       setMemuat(false);
     }
-  }, [filter, tahun]);
+  }, [filter, modePenuh, tahun]);
 
   useEffect(() => {
     let dibatalkan = false;
-    void ambilDataKasAdmin(tahun, filter)
+    void ambilDataKasAdmin(tahun, filter, modePenuh)
       .then((body) => {
         if (dibatalkan) return;
         setEror(null);
@@ -173,7 +179,7 @@ export function PanelKasAdmin() {
     return () => {
       dibatalkan = true;
     };
-  }, [filter, tahun]);
+  }, [filter, modePenuh, tahun]);
 
   async function simpanTarif(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -282,6 +288,7 @@ export function PanelKasAdmin() {
     if (filter.cabang) params.set("cabang", filter.cabang);
     if (filter.komisariat) params.set("komisariat", filter.komisariat);
     if (statusFilter) params.set("status", statusFilter);
+    if (modePenuh) params.set("mode", "penuh");
     return `/api/admin/kas/ekspor?${params}`;
   })();
   const tautanEksporExcel = tautanEkspor.replace("/ekspor?", "/ekspor/excel?");
@@ -458,10 +465,12 @@ export function PanelKasAdmin() {
               <li key={item.id} className="border-2 border-hitam-900 bg-white p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-serif text-lg font-bold text-hitam-900">{item.kader.namaLengkap}</p>
-                    <p className="font-mono text-[11px] text-hitam-500">
-                      @{item.kader.username} · {item.kader.cabangDpc ?? "DPC —"} · {item.kader.komisariat ?? "Komisariat —"}
+                    <p className="font-serif text-lg font-bold text-hitam-900">
+                      {data.rekapPenuh && item.kader ? item.kader.namaLengkap : item.labelAnonim}
                     </p>
+                    {data.rekapPenuh && item.kader && <p className="font-mono text-[11px] text-hitam-500">
+                      @{item.kader.username} · {item.kader.cabangDpc ?? "DPC —"} · {item.kader.komisariat ?? "Komisariat —"}
+                    </p>}
                     <p className="mt-2 text-sm text-hitam-700">
                       {item.jumlahMinggu} minggu · {rupiah(item.totalNominal)} · dibayar{" "}
                       {tanggalLabel(item.tanggalBayar)}
@@ -517,6 +526,15 @@ export function PanelKasAdmin() {
             <p className="text-xs text-hitam-500">Status tampil dengan warna dan label teks; geser tabel ke samping untuk melihat semua minggu.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {data?.bolehRekapPenuh && (
+              <button
+                type="button"
+                onClick={() => setModePenuh((nilai) => !nilai)}
+                className="border-2 border-hitam-900 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-hitam-900 hover:bg-kertas-100"
+              >
+                {modePenuh ? "Mode anonim" : "Lihat rekap penuh"}
+              </button>
+            )}
             <label className="font-mono text-[10px] font-bold uppercase tracking-widest text-hitam-600">
               Tahun{" "}
               <select
