@@ -4,6 +4,7 @@ import { unggahKeSupabase } from "@/lib/storage";
 
 const ROLES_ADMIN = ["Super Admin", "Editor"];
 const TIPE_DITERIMA = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+const JENIS_DITERIMA = new Set(["artikel", "profil", "kas"]);
 const MAKS_BYTE_ARTIKEL = 5 * 1024 * 1024;
 /** Foto profil lebih kecil (avatar): maks 2 MB. */
 const MAKS_BYTE_PROFIL = 2 * 1024 * 1024;
@@ -31,6 +32,10 @@ export async function POST(request: Request) {
     // Tanpa field jenis → default artikel (perilaku lama).
   }
 
+  if (!JENIS_DITERIMA.has(jenis)) {
+    return NextResponse.json({ error: "Jenis media tidak didukung." }, { status: 400 });
+  }
+
   const isAdmin = !!user.roleNama && ROLES_ADMIN.includes(user.roleNama);
   const bolehKader = user.permissions.includes("profil.edit_sendiri");
   const bolehKas = jenis === "kas" && user.permissions.includes("kas.kelola");
@@ -48,11 +53,11 @@ export async function POST(request: Request) {
   }
 
   const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supaUrl || !anon) {
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supaUrl || !serviceRole) {
     return NextResponse.json(
-      { error: "Storage belum dikonfigurasi (NEXT_PUBLIC_SUPABASE_URL / ANON_KEY)." },
-      { status: 501 },
+      { error: "Storage server belum dikonfigurasi." },
+      { status: 500 },
     );
   }
 
@@ -93,13 +98,17 @@ export async function POST(request: Request) {
             ? "webp"
             : "gif";
     const folder = jenis === "profil" ? "profil" : jenis === "kas" ? "kas" : "artikel";
+    const bucket =
+      jenis === "profil"
+        ? process.env.SUPABASE_AVATAR_BUCKET ?? "avatars"
+        : process.env.SUPABASE_STORAGE_BUCKET ?? "artikel";
     const nama = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ekstensi}`;
 
     const bytes = Buffer.from(await file.arrayBuffer());
-    const hasil = await unggahKeSupabase(bytes, nama, file.type);
+    const hasil = await unggahKeSupabase(bytes, nama, file.type, bucket);
     if (!hasil.ok) {
       console.error("[media] Upload Supabase gagal:", hasil.error);
-      return NextResponse.json({ error: hasil.error }, { status: 502 });
+      return NextResponse.json({ error: hasil.error }, { status: hasil.status >= 400 ? hasil.status : 502 });
     }
 
     return NextResponse.json({ ok: true, url: hasil.url, bucket: hasil.bucket });

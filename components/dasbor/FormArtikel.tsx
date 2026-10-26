@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { htmlKeMd, mdKeHtml } from "@/lib/markdown";
 import { idYoutube, sisipAtKursor } from "@/lib/editor-util";
@@ -100,9 +100,24 @@ export function FormArtikel({
   const [unggahGambar, setUnggahGambar] = useState(false);
   const [panel, setPanel] = useState(false);
   const kontenRef = useRef<HTMLTextAreaElement>(null);
+  const ringkasanRef = useRef<HTMLTextAreaElement>(null);
   const unggahGambarRef = useRef<HTMLInputElement>(null);
 
   const pratinjauHtml = useMemo(() => mdKeHtmlAman(konten), [konten]);
+
+  useEffect(() => {
+    const textarea = kontenRef.current;
+    if (!textarea || pratinjau) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.max(textarea.scrollHeight, 360)}px`;
+  }, [konten, pratinjau]);
+
+  useEffect(() => {
+    const textarea = ringkasanRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [ringkasan]);
 
   function sisip(teks: string) {
     setKonten((k) => (k.length === 0 ? teks : `${k}\n\n${teks}`));
@@ -246,8 +261,9 @@ export function FormArtikel({
               <button
                 key={s.label}
                 type="button"
-                onClick={() => sisip(s.teks)}
-                className="shrink-0 border border-transparent px-2 py-1 font-mono text-[11px] text-hitam-600 transition-colors hover:border-hitam-200 hover:bg-white hover:text-hitam-900"
+                onClick={() => sisipKursor(s.teks)}
+                className="min-h-10 shrink-0 rounded-full border border-transparent px-3 py-2 font-mono text-[11px] text-hitam-600 transition-colors hover:border-hitam-200 hover:bg-white hover:text-hitam-900"
+                aria-label={`Sisipkan ${s.label}`}
               >
                 {s.label}
               </button>
@@ -256,14 +272,16 @@ export function FormArtikel({
               type="button"
               disabled={unggahGambar}
               onClick={() => unggahGambarRef.current?.click()}
-              className="shrink-0 border border-transparent px-2 py-1 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:border-gmnimerah-200 hover:bg-white disabled:opacity-50"
+              className="min-h-10 shrink-0 rounded-full border border-transparent px-3 py-2 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:border-gmnimerah-200 hover:bg-white disabled:opacity-50"
+              aria-label="Sisipkan gambar"
             >
               {unggahGambar ? "Mengunggah…" : "Gambar"}
             </button>
             <button
               type="button"
               onClick={sisipVideo}
-              className="shrink-0 border border-transparent px-2 py-1 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:border-gmnimerah-200 hover:bg-white"
+              className="min-h-10 shrink-0 rounded-full border border-transparent px-3 py-2 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:border-gmnimerah-200 hover:bg-white"
+              aria-label="Sisipkan video YouTube"
             >
               Video
             </button>
@@ -314,6 +332,7 @@ export function FormArtikel({
         <label className="mt-4 block">
           <span className="sr-only">Ringkasan</span>
           <textarea
+            ref={ringkasanRef}
             rows={2}
             value={ringkasan}
             onChange={(e) => setRingkasan(e.target.value)}
@@ -333,20 +352,21 @@ export function FormArtikel({
             ref={kontenRef}
             value={konten}
             onChange={(e) => setKonten(e.target.value)}
-            className="min-h-[55vh] w-full resize-none border-0 bg-transparent px-0 py-0 font-sans text-lg leading-[1.85] text-hitam-800 outline-none placeholder:text-hitam-300"
-            placeholder={"Tulis di sini…\n\nGunakan Markdown sederhana:\n## Judul Bagian\n\nParagraf pembuka...\n\n- poin pertama\n- poin kedua\n\n**teks tebal** atau _teks miring_\n\nSisip media: ![keterangan](url-gambar) atau :::youtube ID-VIDEO:::"}
-          />
-          <input
-            ref={unggahGambarRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-            onChange={unggahGambarKonten}
-            className="hidden"
-            aria-hidden
-            tabIndex={-1}
+            className="min-h-[360px] w-full resize-none overflow-hidden border-0 bg-transparent px-0 py-0 font-sans text-lg leading-[1.85] text-hitam-800 outline-none placeholder:text-hitam-300 md:text-xl"
+            placeholder="Mulai menulis…"
           />
         </div>
       )}
+
+      <input
+        ref={unggahGambarRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        onChange={unggahGambarKonten}
+        className="hidden"
+        aria-hidden
+        tabIndex={-1}
+      />
 
       {pratinjau && (
         <div className="mt-8">
