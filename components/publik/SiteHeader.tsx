@@ -123,7 +123,7 @@ export async function SiteHeader() {
 
           {/* Pencarian utama — menonjol di bawah wordmark, lebar lega ala Google */}
           <div className="mt-6 w-full max-w-2xl sm:mt-8">
-            <PencarianCepat />
+            <PencarianCepat sembunyikanDiHalamanCari />
           </div>
         </div>
       </div>

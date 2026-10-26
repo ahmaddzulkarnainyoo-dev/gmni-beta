@@ -248,15 +248,40 @@ export function FormArtikel({
   }
 
   return (
-    <form onSubmit={simpan} className="pb-6">
-      {/* Toolbar lengket ala Medium — tipis, blur, tanpa kotak kaku */}
-      <div className="sticky top-0 z-30 -mx-3 mb-8 border-b border-hitam-200 bg-kertas-50/85 px-3 py-2 backdrop-blur-md sm:-mx-4 sm:px-4">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-auto shrink-0 font-serif text-sm font-bold text-hitam-900">
+    <form onSubmit={simpan} className="pb-24 sm:pb-6">
+      {/* Aksi halaman dipisahkan dari toolbar agar tidak bertumpuk di mobile. */}
+      <div className="sticky top-0 z-30 -mx-3 mb-3 border-b border-hitam-200 bg-kertas-50/90 px-3 py-2 backdrop-blur-md sm:-mx-4 sm:mb-4 sm:px-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="shrink-0 font-serif text-sm font-bold text-hitam-900">
             {buat ? "Tulisan Baru" : "Edit Tulisan"}
           </span>
+          <div className="flex w-full gap-2 sm:ml-auto sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setPanel(true)}
+              className="min-h-10 flex-1 border border-hitam-200 bg-white px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-hitam-700 transition-colors hover:border-hitam-900 hover:text-hitam-900 sm:flex-none"
+            >
+              Kategori &amp; Tag
+            </button>
+            <button
+              type="button"
+              onClick={() => setPratinjau((p) => !p)}
+              className="min-h-10 flex-1 border border-hitam-900 px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white sm:flex-none"
+            >
+              {pratinjau ? "Tulis" : "Pratinjau"}
+            </button>
+          </div>
+        </div>
+      </div>
 
-          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+      {/* Toolbar format melayang di atas bilah simpan saat menulis di mobile. */}
+      {!pratinjau && (
+        <div
+          role="toolbar"
+          aria-label="Pemformatan tulisan"
+          className="sticky bottom-16 z-20 -mx-3 mb-6 border-y border-hitam-200 bg-kertas-50/95 px-3 py-1.5 shadow-[0_-3px_12px_rgba(0,0,0,0.08)] backdrop-blur-md sm:static sm:mx-0 sm:border-y-0 sm:px-0 sm:py-0 sm:shadow-none"
+        >
+          <div className="flex min-w-0 items-center gap-1 overflow-x-auto pb-0.5">
             {SNIPPET_MD.map((s) => (
               <button
                 key={s.label}
@@ -286,23 +311,8 @@ export function FormArtikel({
               Video
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setPanel(true)}
-            className="shrink-0 border border-hitam-200 bg-white px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-hitam-700 transition-colors hover:border-hitam-900 hover:text-hitam-900"
-          >
-            Kategori &amp; Tag
-          </button>
-          <button
-            type="button"
-            onClick={() => setPratinjau((p) => !p)}
-            className="shrink-0 border border-hitam-900 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-hitam-900 transition-colors hover:bg-hitam-900 hover:text-white"
-          >
-            {pratinjau ? "Tulis" : "Pratinjau"}
-          </button>
         </div>
-      </div>
+      )}
 
       {eror && (
         <p role="alert" className="mb-6 border-2 border-gmnimerah-500 bg-gmnimerah-50 px-3 py-2 text-sm font-semibold text-gmnimerah-700">

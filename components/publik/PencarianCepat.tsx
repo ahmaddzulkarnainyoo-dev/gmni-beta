@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { SaranCari } from "@/app/api/cari/saran/route";
 import { cn } from "@/lib/utils";
 
@@ -27,11 +27,14 @@ function samakan(mentah: string): string {
 export function PencarianCepat({
   kueriAwal = "",
   autoFokus = false,
+  sembunyikanDiHalamanCari = false,
 }: {
   kueriAwal?: string;
   autoFokus?: boolean;
+  sembunyikanDiHalamanCari?: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const idDasar = useId();
   const idMasukan = `${idDasar}-masukan`;
   const idDaftar = `${idDasar}-daftar`;
@@ -133,6 +136,8 @@ export function PencarianCepat({
   const idAktif =
     indeksAktif >= 0 && indeksAktif < saran.length ? idDaftar + "-" + indeksAktif : undefined;
   const normalKueri = samakan(kueri);
+
+  if (sembunyikanDiHalamanCari && pathname === "/cari") return null;
 
   return (
     <div className="mx-auto w-full max-w-2xl">
