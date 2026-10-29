@@ -11,6 +11,7 @@ import { BagianKomentar } from "@/components/publik/BagianKomentar";
 import { SlotIklanSidebar } from "@/components/publik/SlotIklanSidebar";
 import { TombolBagikan } from "@/components/publik/TombolBagikan";
 import { TombolApresiasi } from "@/components/publik/TombolApresiasi";
+import { SelectionShareToolbar } from "@/components/publik/SelectionShareToolbar";
 
 export const dynamic = "force-dynamic";
 
@@ -145,6 +146,8 @@ export default async function HalamanArtikel({
         className="konten-artikel mt-8"
         dangerouslySetInnerHTML={{ __html: artikel.konten }}
       />
+
+      <SelectionShareToolbar judul={artikel.judul} penulis={byline.nama} url={urlArtikel} />
 
       {artikel.tags.length > 0 && (
         <footer className="mt-10 border-t-2 border-hitam-100 pt-4">
