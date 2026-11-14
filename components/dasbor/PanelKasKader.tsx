@@ -40,8 +40,9 @@ type DataKas = {
   pembayaran: PembayaranKader[];
 };
 
-async function ambilDataKas(): Promise<DataKas> {
-  const res = await fetch("/api/kas", { cache: "no-store" });
+async function ambilDataKas(tahun?: number): Promise<DataKas> {
+  const query = tahun ? `?tahun=${tahun}` : "";
+  const res = await fetch(`/api/kas${query}`, { cache: "no-store" });
   const body = (await res.json()) as DataKas & { error?: string; ok?: boolean };
   if (!res.ok || !body.ok) {
     throw new Error(body.error ?? "Ringkasan kas belum dapat dimuat.");
@@ -91,10 +92,12 @@ export function PanelKasKader() {
   const [jumlahMinggu, setJumlahMinggu] = useState("1");
   const [tanggalBayar, setTanggalBayar] = useState(() => tanggalWib(new Date()));
   const [catatan, setCatatan] = useState("");
+  const [modeTampilan, setModeTampilan] = useState<"minggu" | "kalender">("minggu");
+  const [tahunKalender, setTahunKalender] = useState(() => Number(tanggalWib(new Date()).slice(0, 4)));
 
   async function muatData() {
     try {
-      const body = await ambilDataKas();
+      const body = await ambilDataKas(tahunKalender);
       setEror(null);
       setData(body);
     } catch {
@@ -123,7 +126,7 @@ export function PanelKasKader() {
     return () => {
       dibatalkan = true;
     };
-  }, []);
+  }, [tahunKalender]);
 
   const pratinjau = (() => {
     const mulai = parseTanggalDateOnly(mingguMulai);
@@ -149,6 +152,8 @@ export function PanelKasKader() {
     }
     return { total, pesan: null };
   })();
+  const mingguAktif = data?.minggu.find((item) => item.mingguMulai === tanggalDateOnly(awalMingguKas(new Date())));
+  const mingguKalender = data?.minggu ?? [];
 
   async function ajukan(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -316,29 +321,51 @@ export function PanelKasKader() {
       <section className="mt-8">
         <div className="flex flex-wrap items-end justify-between gap-2 border-b-2 border-hitam-900 pb-2">
           <div>
-            <h2 className="font-serif text-xl font-extrabold text-hitam-900">
-              Status Mingguan {data?.tahun ?? ""}
-            </h2>
-            <p className="text-xs text-hitam-500">Minggu berjalan dimulai setiap Senin WIB.</p>
+            <h2 className="font-serif text-xl font-extrabold text-hitam-900">Iuran Saya</h2>
+            <p className="text-xs text-hitam-500">Pantau kewajiban minggu ini atau buka kalender riwayat.</p>
           </div>
-          {memuat && <span role="status" className="text-sm text-hitam-500">Memuat...</span>}
+          <div className="flex gap-2" role="tablist" aria-label="Tampilan kas">
+            <button type="button" onClick={() => setModeTampilan("minggu")} className={`border-2 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest ${modeTampilan === "minggu" ? "border-gmnimerah-600 bg-gmnimerah-500 text-white" : "border-hitam-900 text-hitam-900"}`}>Minggu Ini</button>
+            <button type="button" onClick={() => setModeTampilan("kalender")} className={`border-2 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest ${modeTampilan === "kalender" ? "border-gmnimerah-600 bg-gmnimerah-500 text-white" : "border-hitam-900 text-hitam-900"}`}>Kalender</button>
+          </div>
         </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {data?.minggu.map((baris) => (
-            <article key={baris.mingguMulai} className="flex items-start justify-between gap-3 border border-hitam-200 bg-white p-3">
+        {memuat && <p role="status" className="mt-3 text-sm text-hitam-500">Memuat...</p>}
+        {modeTampilan === "minggu" ? (
+          <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto]">
+            <article className="border-2 border-hitam-900 bg-white p-5">
               <div>
-                <p className="font-semibold text-hitam-900">{labelTanggal(baris.mingguMulai)}</p>
-                <p className="mt-0.5 text-xs text-hitam-500">{rupiah(baris.nominal)}</p>
+                <p className="font-mono text-[11px] font-bold uppercase tracking-widest text-gmnimerah-600">Kewajiban minggu berjalan</p>
+                <p className="mt-2 font-serif text-2xl font-extrabold text-hitam-900">{mingguAktif ? labelTanggal(mingguAktif.mingguMulai) : "Belum tersedia"}</p>
+                <p className="mt-1 text-sm text-hitam-500">Nominal: {rupiah(mingguAktif?.nominal ?? null)}</p>
               </div>
-              <span className={`shrink-0 border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wide ${GAYA_STATUS[baris.status]}`}>
-                {LABEL_STATUS[baris.status]}
-              </span>
+              {mingguAktif && <span className={`mt-4 inline-block border px-3 py-2 font-mono text-xs font-bold uppercase tracking-wide ${GAYA_STATUS[mingguAktif.status]}`}>{LABEL_STATUS[mingguAktif.status]}</span>}
             </article>
-          ))}
-          {!memuat && data?.minggu.length === 0 && (
-            <p className="text-sm text-hitam-500">Belum ada status mingguan.</p>
-          )}
-        </div>
+            <div className="border-2 border-gmnimerah-500 bg-kertas-100 p-5">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">Ringkasan cepat</p>
+              <p className="mt-2 font-serif text-2xl font-extrabold text-hitam-900">{data?.minggu.filter((item) => item.status === "LUNAS").length ?? 0}</p>
+              <p className="text-sm text-hitam-600">minggu lunas tahun ini</p>
+              <p className="mt-3 text-xs text-hitam-500">Kalender menyimpan detail minggu, nominal, dan status pembayaran.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3 border-2 border-hitam-900 bg-white p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="font-serif text-lg font-bold text-hitam-900">Kalender status {tahunKalender}</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setTahunKalender((value) => value - 1)} className="border border-hitam-900 px-2 py-1 text-sm" aria-label="Tahun sebelumnya">←</button>
+                <button type="button" onClick={() => setTahunKalender((value) => value + 1)} className="border border-hitam-900 px-2 py-1 text-sm" aria-label="Tahun berikutnya">→</button>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {mingguKalender.map((baris) => (
+                <button key={baris.mingguMulai} type="button" onClick={() => { setMingguMulai(baris.mingguMulai); setModeTampilan("minggu"); }} className="flex items-start justify-between gap-3 border border-hitam-200 p-3 text-left hover:border-gmnimerah-500">
+                  <span><span className="block font-semibold text-hitam-900">{labelTanggal(baris.mingguMulai)}</span><span className="mt-0.5 block text-xs text-hitam-500">{rupiah(baris.nominal)}</span></span>
+                  <span className={`shrink-0 border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wide ${GAYA_STATUS[baris.status]}`}>{LABEL_STATUS[baris.status]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="mt-8">

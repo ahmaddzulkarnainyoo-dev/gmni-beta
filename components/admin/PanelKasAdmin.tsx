@@ -12,6 +12,7 @@ type SelKas = {
   mingguMulai: string;
   nominal: number | null;
   status: StatusTampilanKas;
+  tanggalLunas: string | null;
 };
 type KaderMatrix = {
   id: string;
@@ -48,6 +49,30 @@ type DataKasAdmin = {
   matrix: KaderMatrix[];
   tarif: TarifKasRow[];
   pembayaran: PengajuanKas[];
+  riwayatPembayaran: Array<{
+    id: string;
+    kaderId: string;
+    kader: { namaLengkap: string; username: string; cabangDpc: string | null; komisariat: string | null };
+    tanggalBayar: string;
+    totalNominal: number;
+    jumlahMinggu: number;
+    metode: "TRANSFER" | "TUNAI";
+    status: "MENUNGGU_VERIFIKASI" | "DISETUJUI" | "DITOLAK";
+    catatan: string | null;
+    minggu: string[];
+  }>;
+  grafik: Array<{ bulan: number; pemasukan: number; transaksi: number; kepatuhan: number }>;
+  mingguTerpilih: string;
+  mingguPilihanData: Array<{
+    id: string;
+    namaLengkap: string;
+    username: string;
+    cabangDpc: string | null;
+    komisariat: string | null;
+    status: StatusTampilanKas;
+    nominal: number | null;
+    tanggalLunas: string | null;
+  }>;
   ringkasan: {
     kaderAktif: number;
     kaderSudahBayar: number;
@@ -65,12 +90,14 @@ async function ambilDataKasAdmin(
   tahun: number,
   filter: { q: string; cabang: string; komisariat: string },
   modePenuh: boolean,
+  mingguMulai: string,
 ): Promise<DataKasAdmin> {
   const params = new URLSearchParams({ tahun: String(tahun) });
   if (modePenuh) params.set("mode", "penuh");
   if (filter.q) params.set("q", filter.q);
   if (filter.cabang) params.set("cabang", filter.cabang);
   if (filter.komisariat) params.set("komisariat", filter.komisariat);
+  if (mingguMulai) params.set("mingguMulai", mingguMulai);
   const res = await fetch(`/api/admin/kas?${params}`, { cache: "no-store" });
   const body = (await res.json()) as DataKasAdmin & { ok?: boolean; error?: string };
   if (!res.ok || !body.ok) {
@@ -125,6 +152,7 @@ export function PanelKasAdmin() {
   const [komisariat, setKomisariat] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusTampilanKas | "">("");
   const [modePenuh, setModePenuh] = useState(false);
+  const [mingguMulai, setMingguMulai] = useState(() => tanggalDateOnly(awalMingguKas(new Date())));
   const [filter, setFilter] = useState({ q: "", cabang: "", komisariat: "" });
   const [nominal, setNominal] = useState("");
   const [tarifMulai, setTarifMulai] = useState(() =>
@@ -140,7 +168,7 @@ export function PanelKasAdmin() {
 
   const muatData = useCallback(async (tahunMuat = tahun, filterMuat = filter) => {
     try {
-      const body = await ambilDataKasAdmin(tahunMuat, filterMuat, modePenuh);
+      const body = await ambilDataKasAdmin(tahunMuat, filterMuat, modePenuh, mingguMulai);
       setEror(null);
       setData(body);
       setKaderId((sebelumnya) =>
@@ -153,11 +181,11 @@ export function PanelKasAdmin() {
     } finally {
       setMemuat(false);
     }
-  }, [filter, modePenuh, tahun]);
+  }, [filter, modePenuh, tahun, mingguMulai]);
 
   useEffect(() => {
     let dibatalkan = false;
-    void ambilDataKasAdmin(tahun, filter, modePenuh)
+    void ambilDataKasAdmin(tahun, filter, modePenuh, mingguMulai)
       .then((body) => {
         if (dibatalkan) return;
         setEror(null);
@@ -179,7 +207,7 @@ export function PanelKasAdmin() {
     return () => {
       dibatalkan = true;
     };
-  }, [filter, modePenuh, tahun]);
+  }, [filter, modePenuh, tahun, mingguMulai]);
 
   async function simpanTarif(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -297,6 +325,11 @@ export function PanelKasAdmin() {
       (kader) =>
         !statusFilter || kader.minggu.some((minggu) => minggu.status === statusFilter),
     ) ?? [];
+  const mingguTerpilihData = data?.mingguPilihanData ?? [];
+  const mingguBelumBayar = mingguTerpilihData.filter((kader) => kader.status === "BELUM_BAYAR" || kader.status === "MENUNGGAK");
+  const kaderDetail = data?.matrix.find((kader) => kader.id === kaderId);
+  const riwayatKader = data?.riwayatPembayaran.filter((item) => item.kaderId === kaderId) ?? [];
+  const maxPemasukan = Math.max(...(data?.grafik.map((item) => item.pemasukan) ?? [0]), 1);
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -329,6 +362,27 @@ export function PanelKasAdmin() {
           ["Minggu lunas", String(data.ringkasan.mingguLunas)],
           ["Menunggu verifikasi", `${data.ringkasan.pengajuanMenunggu} · ${rupiah(data.ringkasan.totalMenunggu)}`],
         ].map(([label, value]) => <article key={label} className="border-2 border-hitam-900 bg-white p-4"><p className="font-mono text-[10px] font-bold uppercase tracking-widest text-hitam-500">{label}</p><p className="mt-1 font-serif text-xl font-extrabold text-hitam-900">{value}</p></article>)}
+      </section>}
+
+      {data && <section className="mt-6 grid gap-4 lg:grid-cols-3" aria-label="Analitik arus kas">
+        <article className="border-2 border-hitam-900 bg-white p-4 lg:col-span-2">
+          <div className="flex items-end justify-between gap-3"><div><h2 className="font-serif text-lg font-bold text-hitam-900">Tren pemasukan kas</h2><p className="text-xs text-hitam-500">Pembayaran yang sudah disetujui per bulan.</p></div><strong className="font-mono text-xs text-gmnimerah-700">{rupiah(data.ringkasan.totalKasMasuk)}</strong></div>
+          <div className="mt-5 flex h-40 items-end gap-1 border-b border-hitam-200" aria-label="Grafik batang pemasukan kas">
+            {data.grafik.map((item) => <div key={item.bulan} className="group flex h-full flex-1 flex-col justify-end"><div title={`${item.bulan}: ${rupiah(item.pemasukan)}`} className="min-h-1 bg-gmnimerah-500 transition-all group-hover:bg-gmnimerah-700" style={{ height: `${Math.max(2, (item.pemasukan / maxPemasukan) * 100)}%` }} /><span className="pt-1 text-center font-mono text-[9px] text-hitam-500">{item.bulan}</span></div>)}
+          </div>
+        </article>
+        <article className="border-2 border-hitam-900 bg-white p-4">
+          <h2 className="font-serif text-lg font-bold text-hitam-900">Kepatuhan bulanan</h2>
+          <p className="text-xs text-hitam-500">Persentase status lunas.</p>
+          <div className="mt-4 space-y-2">{data.grafik.filter((item) => item.transaksi || item.kepatuhan).slice(-6).map((item) => <div key={item.bulan}><div className="flex justify-between text-xs"><span>Bulan {item.bulan}</span><strong>{item.kepatuhan}%</strong></div><div className="mt-1 h-2 bg-hitam-100"><div className="h-2 bg-emerald-600" style={{ width: `${item.kepatuhan}%` }} /></div></div>)}{!data.grafik.some((item) => item.transaksi || item.kepatuhan) && <p className="text-sm text-hitam-500">Belum ada data analitik.</p>}</div>
+        </article>
+      </section>}
+
+      {data && <section className="mt-6 border-2 border-gmnimerah-500 bg-white p-4" aria-label="Pemantauan minggu terpilih">
+        <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="font-mono text-[10px] font-bold uppercase tracking-widest text-gmnimerah-600">Aksi utama bendahara</p><h2 className="font-serif text-xl font-bold text-hitam-900">Pemantauan minggu terpilih</h2><p className="text-xs text-hitam-500">Mulai dari daftar yang belum membayar, lalu buka detail kader bila diperlukan.</p></div><label className="font-mono text-[10px] font-bold uppercase tracking-widest text-hitam-600">Minggu mulai (Senin)<input type="date" value={mingguMulai} onChange={(event) => setMingguMulai(event.target.value)} className="ml-2 border-2 border-hitam-900 bg-white px-2 py-1 text-sm" /></label></div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3"><div className="bg-gmnimerah-50 p-3"><p className="text-xs text-hitam-500">Belum bayar</p><p className="font-serif text-2xl font-extrabold text-gmnimerah-700">{mingguBelumBayar.length}</p></div><div className="bg-emerald-50 p-3"><p className="text-xs text-hitam-500">Lunas</p><p className="font-serif text-2xl font-extrabold text-emerald-700">{mingguTerpilihData.filter((item) => item.status === "LUNAS").length}</p></div><div className="bg-amber-50 p-3"><p className="text-xs text-hitam-500">Menunggu verifikasi</p><p className="font-serif text-2xl font-extrabold text-amber-700">{mingguTerpilihData.filter((item) => item.status === "MENUNGGU_VERIFIKASI").length}</p></div></div>
+        <div className="mt-4 overflow-auto border border-hitam-200"><table className="min-w-full text-left text-sm"><thead className="bg-hitam-900 text-white"><tr><th className="px-3 py-2">Kader</th><th className="px-3 py-2">DPC / Komisariat</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Tanggal lunas</th><th className="px-3 py-2">Aksi</th></tr></thead><tbody>{mingguTerpilihData.filter((item) => !statusFilter || item.status === statusFilter).sort((a, b) => (a.status === "LUNAS" ? 1 : 0) - (b.status === "LUNAS" ? 1 : 0)).slice(0, 100).map((item) => <tr key={item.id} className="border-t border-hitam-200"><td className="px-3 py-2 font-semibold">{item.namaLengkap}</td><td className="px-3 py-2 text-xs text-hitam-500">{item.cabangDpc ?? "DPC —"} · {item.komisariat ?? "Komisariat —"}</td><td className="px-3 py-2"><span className={`inline-block px-2 py-1 text-xs font-bold ${GAYA_STATUS[item.status]}`}>{LABEL_STATUS[item.status]}</span></td><td className="px-3 py-2 text-xs">{item.tanggalLunas ? tanggalLabel(item.tanggalLunas.slice(0, 10)) : "—"}</td><td className="px-3 py-2"><button type="button" onClick={() => setKaderId(item.id)} className="font-mono text-[10px] font-bold uppercase tracking-widest text-gmnimerah-700 underline">Buka detail</button></td></tr>)}</tbody></table></div>
+        {kaderDetail && <div className="mt-4 border-t-2 border-hitam-900 pt-4"><h3 className="font-serif text-lg font-bold">Riwayat transaksi: {kaderDetail.namaLengkap}</h3><div className="mt-2 grid gap-2 sm:grid-cols-2">{riwayatKader.length ? riwayatKader.map((item) => <article key={item.id} className="border border-hitam-200 p-3 text-sm"><div className="flex justify-between gap-2"><strong>{tanggalLabel(item.tanggalBayar)}</strong><span className="font-mono text-xs">{item.status}</span></div><p className="mt-1 text-xs text-hitam-500">{item.jumlahMinggu} minggu · {rupiah(item.totalNominal)} · {item.metode}</p><p className="mt-1 text-xs text-hitam-500">Minggu: {item.minggu.map(tanggalLabel).join(", ")}</p></article>) : <p className="text-sm text-hitam-500">Belum ada transaksi pada tahun ini.</p>}</div></div>}
       </section>}
 
       <section className="mt-6 grid gap-4 lg:grid-cols-2">

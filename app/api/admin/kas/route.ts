@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/session";
 import {
   mingguDalamTahun,
+  awalMingguKas,
   nominalUntukMinggu,
   statusTampilanKas,
   tanggalDateOnly,
@@ -47,6 +48,7 @@ export async function GET(request: Request) {
   const cari = url.searchParams.get("q")?.trim().slice(0, 100) ?? "";
   const cabang = url.searchParams.get("cabang")?.trim().slice(0, 100) ?? "";
   const komisariat = url.searchParams.get("komisariat")?.trim().slice(0, 120) ?? "";
+  const mingguTerpilih = url.searchParams.get("mingguMulai")?.trim() ?? "";
   const minggu = mingguDalamTahun(tahun);
   const mulai = minggu[0];
   const akhir = new Date(minggu[minggu.length - 1].getTime() + 7 * 86_400_000);
@@ -68,7 +70,7 @@ export async function GET(request: Request) {
   };
 
   try {
-    const [pengguna, iuran, tarif, pembayaran, pembayaranAgregat] = await Promise.all([
+    const [pengguna, iuran, tarif, pembayaran, riwayatPembayaran, pembayaranAgregat] = await Promise.all([
       prisma.user.findMany({
         where: wherePengguna,
         orderBy: [{ cabangDpc: "asc" }, { komisariat: "asc" }, { namaLengkap: "asc" }],
@@ -120,6 +122,21 @@ export async function GET(request: Request) {
           },
         },
       }),
+      prisma.pembayaranKas.findMany({
+        where: {
+          tanggalBayar: { gte: mulai, lt: akhir },
+          kader: wherePengguna,
+        },
+        orderBy: { tanggalBayar: "desc" },
+        take: 500,
+        include: {
+          kader: { select: { namaLengkap: true, username: true, cabangDpc: true, komisariat: true } },
+          alokasi: {
+            include: { iuranKas: { select: { mingguMulai: true, nominal: true } } },
+            orderBy: { iuranKas: { mingguMulai: "asc" } },
+          },
+        },
+      }),
       prisma.pembayaranKas.groupBy({
         by: ["status"],
         where: { tanggalBayar: { gte: mulai, lt: akhir } },
@@ -151,6 +168,7 @@ export async function GET(request: Request) {
           mingguMulai: tanggalDateOnly(mingguMulai),
           nominal: catatan?.nominal ?? nominalUntukMinggu(tarif, mingguMulai),
           status: statusTampilanKas(catatan?.status ?? null, mingguMulai),
+          tanggalLunas: catatan?.tanggalLunas?.toISOString() ?? null,
         };
       }),
     }));
@@ -159,12 +177,40 @@ export async function GET(request: Request) {
     const hitungStatus = (status: StatusTampilanKas) => statusIuran.filter((item) => item === status).length;
     const kaderLunas = new Set(matrix.filter((kader) => kader.minggu.some((item) => item.status === "LUNAS")).map((kader) => kader.id));
     const agregat = (status: "DISETUJUI" | "MENUNGGU_VERIFIKASI") => pembayaranAgregat.find((item) => item.status === status);
+    const mingguPilihan = mingguTerpilih && minggu.some((item) => tanggalDateOnly(item) === mingguTerpilih)
+      ? mingguTerpilih
+      : tanggalDateOnly(minggu[Math.min(minggu.length - 1, Math.max(0, minggu.findIndex((item) => tanggalDateOnly(item) >= tanggalDateOnly(awalMingguKas(new Date()))))) ] ?? minggu[0]);
+    const mingguPilihanData = matrix.map((kader) => ({
+      id: kader.id,
+      namaLengkap: kader.namaLengkap,
+      username: kader.username,
+      cabangDpc: kader.cabangDpc,
+      komisariat: kader.komisariat,
+      status: kader.minggu.find((item) => item.mingguMulai === mingguPilihan)?.status ?? "BELUM_BAYAR",
+      nominal: kader.minggu.find((item) => item.mingguMulai === mingguPilihan)?.nominal ?? null,
+      tanggalLunas: kader.minggu.find((item) => item.mingguMulai === mingguPilihan)?.tanggalLunas ?? null,
+    }));
+    const bulan = Array.from({ length: 12 }, (_, index) => ({ bulan: index + 1, pemasukan: 0, transaksi: 0, kepatuhan: 0 }));
+    for (const item of riwayatPembayaran) {
+      const target = bulan[item.tanggalBayar.getUTCMonth()];
+      if (item.status === "DISETUJUI") {
+        target.pemasukan += item.totalNominal;
+        target.transaksi += 1;
+      }
+    }
+    for (const [index, item] of bulan.entries()) {
+      const bulanMinggu = minggu.filter((mingguMulai) => mingguMulai.getUTCMonth() === index);
+      const statusBulan = matrix.flatMap((kader) => kader.minggu.filter((mingguItem) => bulanMinggu.some((mingguMulai) => tanggalDateOnly(mingguMulai) === mingguItem.mingguMulai)).map((mingguItem) => mingguItem.status));
+      item.kepatuhan = statusBulan.length ? Math.round((statusBulan.filter((status) => status === "LUNAS").length / statusBulan.length) * 100) : 0;
+    }
     return NextResponse.json({
       ok: true,
       bolehRekapPenuh: user.roleNama === "Super Admin",
       rekapPenuh: lihatPenuh,
       tahun,
       minggu: minggu.map(tanggalDateOnly),
+      mingguTerpilih: mingguPilihan,
+      mingguPilihanData,
       matrix,
       tarif: tarif.map((item) => ({
         id: item.id,
@@ -187,6 +233,26 @@ export async function GET(request: Request) {
           nominal: alokasi.nominal,
         })),
       })),
+      riwayatPembayaran: riwayatPembayaran.map((item) => ({
+        id: item.id,
+        kaderId: item.kaderId,
+        kader: lihatPenuh
+          ? item.kader
+          : {
+              namaLengkap: `Kader Anonim #${item.kaderId.slice(-6).toUpperCase()}`,
+              username: "",
+              cabangDpc: null,
+              komisariat: null,
+            },
+        tanggalBayar: tanggalDateOnly(item.tanggalBayar),
+        totalNominal: item.totalNominal,
+        jumlahMinggu: item.jumlahMinggu,
+        metode: item.metode,
+        status: item.status,
+        catatan: item.catatan,
+        minggu: item.alokasi.map((alokasi) => tanggalDateOnly(alokasi.iuranKas.mingguMulai)),
+      })),
+      grafik: bulan,
       ringkasan: {
         kaderAktif: pengguna.length,
         kaderSudahBayar: kaderLunas.size,

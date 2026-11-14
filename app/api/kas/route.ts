@@ -43,14 +43,21 @@ function pesanKonflikKas(error: unknown): boolean {
 }
 
 /** GET /api/kas — status mingguan dan riwayat kas kader yang sedang masuk. */
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   }
 
   try {
-    const tahun = Number(tanggalWib(new Date()).slice(0, 4));
+    const url = new URL(request.url);
+    const tahunParam = url.searchParams.get("tahun");
+    const tahun = tahunParam === null
+      ? Number(tanggalWib(new Date()).slice(0, 4))
+      : Number(tahunParam);
+    if (!Number.isInteger(tahun) || tahun < 1900 || tahun > 9998) {
+      return NextResponse.json({ error: "Tahun kas tidak valid." }, { status: 400 });
+    }
     const minggu = mingguDalamTahun(tahun);
     const mulai = minggu[0];
     const akhir = new Date(minggu[minggu.length - 1].getTime() + 7 * 86_400_000);
