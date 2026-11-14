@@ -77,30 +77,45 @@ function jalurEncoded(jalur: string): string {
     .join("/");
 }
 
-function pesanGagal(status: number, keterangan: string): string {
-  const ringkas = keterangan.replace(/\s+/g, " ").slice(0, 200);
-  if (status === 404 || /Bucket not found|does not exist/i.test(keterangan)) {
-    return `Bucket storage tidak ditemukan. Pastikan bucket sudah dibuat di Supabase. Detail: ${ringkas}`;
-  }
-  if (status === 403 || /securityError|policy|row-level/i.test(keterangan)) {
-    return `Supabase menolak operasi storage. Periksa service role key dan konfigurasi bucket. Detail: ${ringkas}`;
-  }
-  return `Upload gagal (kode ${status}). Coba lagi. Detail: ${ringkas}`;
+function ringkasKeterangan(keterangan: string): string {
+  return keterangan.replace(/\s+/g, " ").trim().slice(0, 240);
 }
 
-/** Buat satu bucket secara idempoten sebagai pemulihan konfigurasi server. */
+function pesanGagal(status: number, keterangan: string, bucket?: string): string {
+  const ringkas = ringkasKeterangan(keterangan);
+  const konteks = bucket ? ` Bucket "${bucket}".` : "";
+  if (status === 404 || /Bucket not found|does not exist/i.test(keterangan)) {
+    return `Bucket storage tidak ditemukan.${konteks} Pastikan bucket sudah dibuat di Supabase. Detail: ${ringkas || "respons kosong"}`;
+  }
+  if (status === 403 || /securityError|policy|row-level/i.test(keterangan)) {
+    return `Supabase menolak operasi storage.${konteks} Periksa service role key dan konfigurasi bucket. Detail: ${ringkas || "respons kosong"}`;
+  }
+  return `Upload gagal (kode ${status}).${konteks} Coba lagi. Detail: ${ringkas || "respons kosong"}`;
+}
+
+type HasilSiapkanBucket =
+  | { ok: true }
+  | { ok: false; status: number; detail: string };
+
+/** Pastikan satu bucket tersedia secara idempoten sebagai pemulihan konfigurasi server. */
 async function buatBucket(
   url: string,
   key: string,
   konfigurasi: KonfigurasiBucket,
-): Promise<boolean> {
+): Promise<HasilSiapkanBucket> {
   try {
     const cek = await fetch(`${url}/storage/v1/bucket/${encodeURIComponent(konfigurasi.id)}`, {
       method: "GET",
       headers: { Authorization: `Bearer ${key}`, apikey: key },
     });
-    if (cek.ok) return true;
-    if (cek.status !== 404) return false;
+    if (cek.ok) return { ok: true };
+    if (cek.status !== 404) {
+      return {
+        ok: false,
+        status: cek.status,
+        detail: ringkasKeterangan(await cek.text().catch(() => "")),
+      };
+    }
 
     const res = await fetch(`${url}/storage/v1/bucket`, {
       method: "POST",
@@ -117,9 +132,18 @@ async function buatBucket(
         allowed_mime_types: konfigurasi.allowedMimeTypes,
       }),
     });
-    return res.ok || res.status === 409;
-  } catch {
-    return false;
+    if (res.ok || res.status === 409) return { ok: true };
+    return {
+      ok: false,
+      status: res.status,
+      detail: ringkasKeterangan(await res.text().catch(() => "")),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 0,
+      detail: error instanceof Error ? error.message : "permintaan ke Supabase gagal",
+    };
   }
 }
 
@@ -134,18 +158,29 @@ export async function pastikanBucketStorage(
     fileSizeLimit: 5 * 1024 * 1024,
     allowedMimeTypes: [],
   };
-  if (!(await buatBucket(url, key, konfigurasi))) {
-    throw new Error(`Bucket storage "${bucket}" belum tersedia atau tidak dapat dibuat.`);
+  const hasil = await buatBucket(url, key, konfigurasi);
+  if (!hasil.ok) {
+    const status = hasil.status ? `HTTP ${hasil.status}` : "tanpa respons HTTP";
+    throw new Error(
+      `Bucket storage "${bucket}" gagal disiapkan (${status}). ${hasil.detail || "Detail tidak tersedia."}`,
+    );
   }
 }
 
+/**
+ * Kompatibilitas untuk pemanggil lama. Jalur upload baru wajib menggunakan
+ * pastikanBucketStorage agar bucket yang tidak terkait tidak ikut memblokir.
+ */
 export async function pastikanSemuaBucketStorage(): Promise<void> {
   const konfigurasi = konfigurasiStorage();
-  const hasil = await Promise.all(
-    daftarKonfigurasiBucket().map((bucket) => buatBucket(konfigurasi.url, konfigurasi.key, bucket)),
-  );
-  if (hasil.some((berhasil) => !berhasil)) {
-    throw new Error("Satu atau beberapa bucket storage belum tersedia dan gagal dibuat.");
+  for (const bucket of daftarKonfigurasiBucket()) {
+    const hasil = await buatBucket(konfigurasi.url, konfigurasi.key, bucket);
+    if (!hasil.ok) {
+      const status = hasil.status ? `HTTP ${hasil.status}` : "tanpa respons HTTP";
+      throw new Error(
+        `Bucket storage "${bucket.id}" gagal disiapkan (${status}). ${hasil.detail || "Detail tidak tersedia."}`,
+      );
+    }
   }
 }
 
@@ -169,12 +204,18 @@ export async function unggahKeSupabase(
 
   const { url, key, bucket } = konfigurasi;
   try {
-    await pastikanSemuaBucketStorage();
+    await pastikanBucketStorage(
+      bucket,
+      bucket !== (process.env.SUPABASE_KAS_BUCKET?.trim() || "bukti-kas"),
+    );
   } catch (error) {
     return {
       ok: false,
       status: 502,
-      error: error instanceof Error ? error.message : "Bucket storage belum tersedia.",
+      error:
+        error instanceof Error
+          ? `Storage bucket gagal disiapkan: ${error.message}`
+          : "Bucket storage belum tersedia.",
     };
   }
   const endpoint = `${url}/storage/v1/object/${bucket}/${jalurEncoded(namaJalur)}`;
@@ -191,19 +232,6 @@ export async function unggahKeSupabase(
     body: new Uint8Array(bytes),
   });
 
-  if (res.status === 404 && (await buatBucket(url, key, {
-    id: bucket,
-    public: bucket !== (process.env.SUPABASE_KAS_BUCKET ?? "bukti-kas"),
-    fileSizeLimit: 5 * 1024 * 1024,
-    allowedMimeTypes: [],
-  }))) {
-    res = await fetch(endpoint, {
-      method: "POST",
-      headers,
-      body: new Uint8Array(bytes),
-    });
-  }
-
   if (res.ok) {
     return {
       ok: true,
@@ -215,7 +243,7 @@ export async function unggahKeSupabase(
 
   const keterangan = await res.text().catch(() => "");
   console.error(`[storage] Upload bucket "${bucket}" gagal (${res.status}):`, keterangan.slice(0, 200));
-  return { ok: false, status: res.status, error: pesanGagal(res.status, keterangan) };
+  return { ok: false, status: res.status, error: pesanGagal(res.status, keterangan, bucket) };
 }
 
 export function pesanErrorUnggah(hasil: HasilUnggah): string | null {

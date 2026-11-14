@@ -1,4 +1,4 @@
-import { pastikanSemuaBucketStorage } from "@/lib/storage";
+import { pastikanBucketStorage } from "@/lib/storage";
 
 const MAX_BUKTI_BYTE = 5 * 1024 * 1024;
 const TIPE_BUKTI = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -79,7 +79,7 @@ export async function unggahBuktiKas(
   tipeKonten: string,
 ): Promise<void> {
   const { url, key, bucket } = konfigurasiStorage();
-  await pastikanSemuaBucketStorage();
+  await pastikanBucketStorage(bucket, false);
   const res = await fetch(
     `${url}/storage/v1/object/${bucket}/${jalurEncoded(jalur)}`,
     {
