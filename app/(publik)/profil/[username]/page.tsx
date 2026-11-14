@@ -135,7 +135,7 @@ export default async function HalamanProfil({
 
   // Badge publik (lazily, blueprint 8.4) — hanya untuk profil terbuka.
   await evaluasiBadgeKader(profil.id);
-  const [lencana, statPengikut, statDiikuti, sudahMengikuti, katalogBadge] = await Promise.all([
+  const [lencana, statPengikut, statDiikuti, sudahMengikuti, katalogBadge, statArtikel, statDibaca, statKomentar] = await Promise.all([
     prisma.pencapaian.findMany({
       where: { userId: profil.id },
       orderBy: { tanggalDiperoleh: "desc" },
@@ -152,6 +152,9 @@ export default async function HalamanProfil({
           .catch(() => null)
       : Promise.resolve(null),
     ambilKatalogBadge(),
+    prisma.artikel.count({ where: { penulisId: profil.id, status: "TERBIT", visibilitasPenulis: "ASLI" } }),
+    prisma.artikel.aggregate({ where: { penulisId: profil.id, status: "TERBIT", visibilitasPenulis: "ASLI" }, _sum: { jumlahDilihat: true } }),
+    prisma.komentar.count({ where: { penulisId: profil.id, status: "TAMPIL" } }),
   ]);
 
   return (
@@ -241,6 +244,10 @@ export default async function HalamanProfil({
             <span className="font-bold text-hitam-700">{statDiikuti}</span> Mengikuti
           </p>
         </div>
+      </section>
+
+      <section className="mt-6 grid grid-cols-2 gap-3 border-2 border-hitam-900 bg-white p-4 sm:grid-cols-4" aria-label="Statistik profil">
+        {[ ["Artikel terbit", statArtikel], ["Dibaca", statDibaca._sum.jumlahDilihat ?? 0], ["Komentar", statKomentar], ["Pengikut", statPengikut] ].map(([label, nilai]) => <div key={label as string}><p className="font-mono text-[10px] font-bold uppercase tracking-widest text-hitam-500">{label}</p><p className="mt-1 font-serif text-2xl font-extrabold text-hitam-900">{nilai}</p></div>)}
       </section>
 
       <section className="mt-12">

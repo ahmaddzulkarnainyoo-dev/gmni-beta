@@ -138,74 +138,75 @@ enum MetodePembayaranKas {
 // ============================================================
 
 model User {
-  id                String   @id @default(cuid())
-  namaLengkap       String
-  username          String   @unique
-  email             String   @unique
-  nim               String?  @unique /// NIM kader — identitas login (email untuk recovery); nullable utk akun admin/legacy
-  nomorWa           String?  @unique /// terverifikasi OTP (Fase 2)
-  passwordHash      String
-  fotoProfil        String? /// URL ke object storage (Vercel Blob/Cloudinary)
-  bio               String? @db.Text
-  daerahAsal        String? /// nama daerah/DPC asal
-  cabangKomisariat String? /// LEGACY: gabungan cabang/komisariat (form lama) — jangan diisi baru
-  cabangDpc        String? /// DPC — cabang kota/kabupaten (form pendaftaran baru, dipisah dari komisariat)
-  komisariat       String? /// Komisariat — kampus/sekolah/fakultas (form pendaftaran baru)
-  roleId            String
-  role              Role     @relation(fields: [roleId], references: [id])
-  statusAkun        StatusAkun @default(AKTIF)
-  profilTersembunyi Boolean  @default(false) /// toggle sembunyikan dari cari & DM (6.2)
-  sembunyikanDariPapan Boolean @default(false) /// sembunyikan kader dari papan leaderboard publik (kontrol Super Admin)
-  totpPendingSecret String?  /// secret tentatif TOTP saat wizard setup (4.2)
-  totpSecret        String?  /// secret aktif TOTP (RFC 6238, base32)
-  is2FAEnabled      Boolean  @default(false) /// 2FA TOTP aktif
-  totpAktivasiAt    DateTime?
-  totpUpayaGagal    Int      @default(0) /// limiter brute-force OTP (5x → kunci 15 mnt)
-  totpKunciSampai   DateTime?
-  recoveryKodes     String[] /// hash bcrypt kode pemulihan (tampil 1x saat setup)
-  diundangOlehId    String?
-  diundangOleh      User?    @relation("RelasiUndangan", fields: [diundangOlehId], references: [id])
-  undangan          User[]   @relation("RelasiUndangan")
-  tokenUndangan     String?  @unique /// invite token untuk /daftar
-  tanggalBergabung  DateTime @default(now())
-  terakhirAktif     DateTime?
+  id                   String     @id @default(cuid())
+  namaLengkap          String
+  username             String     @unique
+  email                String     @unique
+  nim                  String?    @unique /// NIM kader — identitas login (email untuk recovery); nullable utk akun admin/legacy
+  nomorWa              String?    @unique /// terverifikasi OTP (Fase 2)
+  passwordHash         String
+  fotoProfil           String? /// URL ke object storage (Vercel Blob/Cloudinary)
+  bio                  String?    @db.Text
+  daerahAsal           String? /// nama daerah/DPC asal
+  cabangKomisariat     String? /// LEGACY: gabungan cabang/komisariat (form lama) — jangan diisi baru
+  cabangDpc            String? /// DPC — cabang kota/kabupaten (form pendaftaran baru, dipisah dari komisariat)
+  komisariat           String? /// Komisariat — kampus/sekolah/fakultas (form pendaftaran baru)
+  roleId               String
+  role                 Role       @relation(fields: [roleId], references: [id])
+  statusAkun           StatusAkun @default(AKTIF)
+  profilTersembunyi    Boolean    @default(false) /// toggle sembunyikan dari cari & DM (6.2)
+  sembunyikanDariPapan Boolean    @default(false) /// sembunyikan kader dari papan leaderboard publik (kontrol Super Admin)
+  totpPendingSecret    String? /// secret tentatif TOTP saat wizard setup (4.2)
+  totpSecret           String? /// secret aktif TOTP (RFC 6238, base32)
+  is2FAEnabled         Boolean    @default(false) /// 2FA TOTP aktif
+  totpAktivasiAt       DateTime?
+  totpUpayaGagal       Int        @default(0) /// limiter brute-force OTP (5x → kunci 15 mnt)
+  totpKunciSampai      DateTime?
+  recoveryKodes        String[] /// hash bcrypt kode pemulihan (tampil 1x saat setup)
+  diundangOlehId       String?
+  diundangOleh         User?      @relation("RelasiUndangan", fields: [diundangOlehId], references: [id])
+  undangan             User[]     @relation("RelasiUndangan")
+  tokenUndangan        String?    @unique /// invite token untuk /daftar
+  tanggalBergabung     DateTime   @default(now())
+  terakhirAktif        DateTime?
 
-  artikel           Artikel[]  @relation("ArtikelPenulis")
-  artikelDisetujui  Artikel[]  @relation("ArtikelDisetujuiOleh")
-  roleDibuat        Role[]     @relation("RoleDibuatOleh")
-  halamanStatis     HalamanStatis[] @relation("HalamanDiubahOleh")
-  tokohDibuat       Tokoh[]    @relation("TokohDibuatOleh")
-  auditLogs         AuditLog[]
-  komentar          Komentar[]
-  apresiasiArtikel  Apresiasi[] @relation("UserApresiasi")
-  keanggotaanPercakapan AnggotaPercakapan[]
-  pesanTerkirim     Pesan[] @relation("PesanTerkirim")
-  kegiatan          KegiatanKader[] @relation("KegiatanKader")
-  streak            StreakKader? @relation("StreakKader")
-  pencapaian        Pencapaian[] @relation("Pencapaian")
-  peringkat         PeringkatMingguan[] @relation("PeringkatMingguan")
-  iklanDibuat       Iklan[] @relation("IklanDibuatOleh")
-  donasiDiverifikasi Donasi[] @relation("DonasiDiverifikasiOleh")
-  undanganDibuat    TokenUndangan[] @relation("UndanganDibuatOleh")
-  hakJawabDijawab   HakJawab[]      @relation("HakJawabDijawabOleh")
-  ajusPoinDiterima  AjusPoin[]      @relation("AjusPoinUser")
-  ajusPoinDiberikan AjusPoin[]      @relation("AjusPoinOleh")
-  konfigDonasiDiubah KonfigurasiDonasi[] @relation("KonfigDonasiOleh")
-  konfigKasDiubah    KonfigurasiKas[] @relation("KonfigKasDiubahOleh")
-  tarifKasDibuat    KonfigurasiIuranKas[] @relation("TarifKasDibuatOleh")
-  iuranKas          IuranKas[] @relation("IuranKasKader")
-  pembayaranKas     PembayaranKas[] @relation("PembayaranKasKader")
-  pembayaranKasDicatat PembayaranKas[] @relation("PembayaranKasDicatatOleh")
-  pembayaranKasDiverifikasi PembayaranKas[] @relation("PembayaranKasDiverifikasiOleh")
-  pengaturanSitusDiubah PengaturanSitus[] @relation("PengaturanSitusOleh")
-  tokenPemulihan    TokenPemulihan[]
-  pemulihanDibuat   TokenPemulihan[] @relation("PemulihanDibuatOleh")
-  mengikuti         Follower[] @relation("RelasiFollowPengikut")
-  pengikut          Follower[] @relation("RelasiFollowDiikuti")
-  notifikasi        Notifikasi[] @relation("NotifikasiUser")
+  artikel                   Artikel[]             @relation("ArtikelPenulis")
+  artikelDisetujui          Artikel[]             @relation("ArtikelDisetujuiOleh")
+  roleDibuat                Role[]                @relation("RoleDibuatOleh")
+  halamanStatis             HalamanStatis[]       @relation("HalamanDiubahOleh")
+  tokohDibuat               Tokoh[]               @relation("TokohDibuatOleh")
+  auditLogs                 AuditLog[]
+  komentar                  Komentar[]
+  apresiasiArtikel          Apresiasi[]           @relation("UserApresiasi")
+  keanggotaanPercakapan     AnggotaPercakapan[]
+  pesanTerkirim             Pesan[]               @relation("PesanTerkirim")
+  kegiatan                  KegiatanKader[]       @relation("KegiatanKader")
+  streak                    StreakKader?          @relation("StreakKader")
+  pencapaian                Pencapaian[]          @relation("Pencapaian")
+  peringkat                 PeringkatMingguan[]   @relation("PeringkatMingguan")
+  iklanDibuat               Iklan[]               @relation("IklanDibuatOleh")
+  donasiDiverifikasi        Donasi[]              @relation("DonasiDiverifikasiOleh")
+  undanganDibuat            TokenUndangan[]       @relation("UndanganDibuatOleh")
+  hakJawabDijawab           HakJawab[]            @relation("HakJawabDijawabOleh")
+  ajusPoinDiterima          AjusPoin[]            @relation("AjusPoinUser")
+  ajusPoinDiberikan         AjusPoin[]            @relation("AjusPoinOleh")
+  konfigDonasiDiubah        KonfigurasiDonasi[]   @relation("KonfigDonasiOleh")
+  konfigKasDiubah           KonfigurasiKas[]      @relation("KonfigKasDiubahOleh")
+  tarifKasDibuat            KonfigurasiIuranKas[] @relation("TarifKasDibuatOleh")
+  iuranKas                  IuranKas[]            @relation("IuranKasKader")
+  pembayaranKas             PembayaranKas[]       @relation("PembayaranKasKader")
+  pembayaranKasDicatat      PembayaranKas[]       @relation("PembayaranKasDicatatOleh")
+  pembayaranKasDiverifikasi PembayaranKas[]       @relation("PembayaranKasDiverifikasiOleh")
+  pengaturanSitusDiubah     PengaturanSitus[]     @relation("PengaturanSitusOleh")
+  tokenPemulihan            TokenPemulihan[]
+  pemulihanDibuat           TokenPemulihan[]      @relation("PemulihanDibuatOleh")
+  mengikuti                 Follower[]            @relation("RelasiFollowPengikut")
+  pengikut                  Follower[]            @relation("RelasiFollowDiikuti")
+  notifikasi                Notifikasi[]          @relation("NotifikasiUser")
+  bookmark                  Bookmark[]
 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([roleId])
   @@index([tanggalBergabung])
@@ -216,27 +217,27 @@ model User {
 // ============================================================
 
 model Role {
-  id            String  @id @default(cuid())
-  nama          String  @unique
-  deskripsi     String?
-  dibuatOlehId  String?
-  dibuatOleh    User?   @relation("RoleDibuatOleh", fields: [dibuatOlehId], references: [id])
+  id              String  @id @default(cuid())
+  nama            String  @unique
+  deskripsi       String?
+  dibuatOlehId    String?
+  dibuatOleh      User?   @relation("RoleDibuatOleh", fields: [dibuatOlehId], references: [id])
   /// Role bawaan (Super Admin, Editor, Kontributor) tidak bisa dihapus —
   /// hanya bisa diduplikasi menjadi role baru (blueprint 5.2).
   isSystemDefault Boolean @default(false)
 
-  permissions  RolePermission[]
-  users        User[]
+  permissions RolePermission[]
+  users       User[]
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Permission {
-  id          String  @id @default(cuid())
-  kode        String  @unique /// contoh: "artikel.publish", "role.kelola" (blueprint 5.3)
-  deskripsi   String?
-  roles       RolePermission[]
+  id        String           @id @default(cuid())
+  kode      String           @unique /// contoh: "artikel.publish", "role.kelola" (blueprint 5.3)
+  deskripsi String?
+  roles     RolePermission[]
 }
 
 /// Pivot many-to-many Role ↔ Permission (blueprint 7.2).
@@ -254,22 +255,22 @@ model RolePermission {
 // ============================================================
 
 model Kategori {
-  id          String   @id @default(cuid())
-  nama        String
-  slug        String   @unique
-  deskripsi   String?  @db.Text
+  id        String    @id @default(cuid())
+  nama      String
+  slug      String    @unique
+  deskripsi String?   @db.Text
   /// Kategori tetap "Marhaenisme" ditandai agar selalu tampil di atas.
-  isTetap     Boolean  @default(false)
-  artikel     Artikel[]
+  isTetap   Boolean   @default(false)
+  artikel   Artikel[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Tag {
-  id      String  @id @default(cuid())
+  id      String       @id @default(cuid())
   nama    String
-  slug    String  @unique
+  slug    String       @unique
   artikel ArtikelTag[]
 }
 
@@ -288,41 +289,42 @@ model ArtikelTag {
 // ============================================================
 
 model Artikel {
-  id                        String            @id @default(cuid())
-  judul                     String
-  slug                      String            @unique
-  konten                    String            @db.Text /// rich text/HTML hasil editor
-  ringkasan                 String?           @db.Text
-  gambarUtama               String?           @db.Text /// URL object storage
-  kategoriId                String
-  kategori                  Kategori          @relation(fields: [kategoriId], references: [id])
-  tags                      ArtikelTag[]
-  komentar                  Komentar[]
-  jumlahApresiasi         Int                 @default(0) /// denormalisasi total tepuk (SUM Apresiasi.jumlah)
-  apresiasi               Apresiasi[]         @relation("ArtikelApresiasi")
-  penulisId                 String
-  penulis                   User              @relation("ArtikelPenulis", fields: [penulisId], references: [id])
-  status                    StatusArtikel     @default(DRAFT)
-  visibilitasPenulis        VisibilitasPenulis @default(ASLI)
+  id                          String             @id @default(cuid())
+  judul                       String
+  slug                        String             @unique
+  konten                      String             @db.Text /// rich text/HTML hasil editor
+  ringkasan                   String?            @db.Text
+  gambarUtama                 String?            @db.Text /// URL object storage
+  kategoriId                  String
+  kategori                    Kategori           @relation(fields: [kategoriId], references: [id])
+  tags                        ArtikelTag[]
+  komentar                    Komentar[]
+  jumlahApresiasi             Int                @default(0) /// denormalisasi total tepuk (SUM Apresiasi.jumlah)
+  apresiasi                   Apresiasi[]        @relation("ArtikelApresiasi")
+  penulisId                   String
+  penulis                     User               @relation("ArtikelPenulis", fields: [penulisId], references: [id])
+  status                      StatusArtikel      @default(DRAFT)
+  visibilitasPenulis          VisibilitasPenulis @default(ASLI)
   /// Dipakai bila visibilitasPenulis = SAMARAN (blueprint 6.2).
-  namaTampilanKustom        String?
+  namaTampilanKustom          String?
   /// Auto-true bila samaran; artikel ini dikecualikan dari gamifikasi (8.4).
-  dikecualikanDariLeaderboard Boolean           @default(false)
+  dikecualikanDariLeaderboard Boolean            @default(false)
   /// Artikel pinned (contoh: rubrik Marhaenisme tetap di atas).
-  disematkan                Boolean           @default(false)
-  disetujuiOlehId           String?
-  disetujuiOleh             User?             @relation("ArtikelDisetujuiOleh", fields: [disetujuiOlehId], references: [id])
+  disematkan                  Boolean            @default(false)
+  bookmark                    Bookmark[]
+  disetujuiOlehId             String?
+  disetujuiOleh               User?              @relation("ArtikelDisetujuiOleh", fields: [disetujuiOlehId], references: [id])
   /// Wajib diisi admin saat DIMINTA_REVISI / DITOLAK (blueprint 6.1).
-  catatanRevisi             String?           @db.Text
-  jumlahDilihat             Int               @default(0)
-  jumlahDibagikan           Int               @default(0)
-  jumlahKomentar            Int               @default(0)
-  tanggalDiajukan           DateTime?
-  tanggalTerbit             DateTime?
-  tanggalDijadwalkan        DateTime?
+  catatanRevisi               String?            @db.Text
+  jumlahDilihat               Int                @default(0)
+  jumlahDibagikan             Int                @default(0)
+  jumlahKomentar              Int                @default(0)
+  tanggalDiajukan             DateTime?
+  tanggalTerbit               DateTime?
+  tanggalDijadwalkan          DateTime?
 
-  createdAt                 DateTime          @default(now())
-  updatedAt                 DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([kategoriId])
   @@index([status])
@@ -364,13 +366,13 @@ model Komentar {
 
 /// Ruang obrolan 1-on-1 antar dua kader.
 model Percakapan {
-  id              String               @id @default(cuid())
+  id              String              @id @default(cuid())
   /// Penanda aktivitas terakhir — sort daftar room tanpa join MAX().
   pesanTerakhirAt DateTime?
   anggota         AnggotaPercakapan[]
   pesan           Pesan[]
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
   @@index([pesanTerakhirAt])
   @@index([updatedAt])
@@ -378,13 +380,13 @@ model Percakapan {
 
 /// Keanggotaan room — tepat 2 baris per percakapan 1-on-1.
 model AnggotaPercakapan {
-  percakapanId    String
-  percakapan      Percakapan @relation(fields: [percakapanId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  percakapanId     String
+  percakapan       Percakapan @relation(fields: [percakapanId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// Cursor badge unread + read-receipt per pihak.
   terakhirDibacaAt DateTime?
-  tanggalBergabung DateTime  @default(now())
+  tanggalBergabung DateTime   @default(now())
 
   /// Kunci gabungan mencegah duplikat + jadi kunci dedup 1-on-1.
   @@id([percakapanId, userId])
@@ -440,32 +442,32 @@ model StreakKader {
 }
 
 model Pencapaian {
-  id                String   @id @default(cuid())
-  userId            String
-  user              User     @relation("Pencapaian", fields: [userId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation("Pencapaian", fields: [userId], references: [id], onDelete: Cascade)
   /// Contoh: "ARTIKEL_FIRST" | "ARTIKEL_10" | "KOMENTAR_10" | "KOMENTAR_50"
   /// | "STREAK_3" | "STREAK_7" | "STREAK_30" | "TOP_3_MINGGU".
-  jenisBadge        String
+  jenisBadge       String
   /// Periode perolehan: "SEMUA" untuk lifetime, "2026-W37" untuk mingguan.
-  periode           String
-  tanggalDiperoleh  DateTime @default(now())
+  periode          String
+  tanggalDiperoleh DateTime @default(now())
 
   @@unique([userId, jenisBadge, periode])
   @@index([userId])
 }
 
 model PeringkatMingguan {
-  id                 String            @id @default(cuid())
-  mingguMulai        DateTime
-  mingguSelesai      DateTime
-  kategori           KategoriPeringkat
-  userId             String
-  user               User              @relation("PeringkatMingguan", fields: [userId], references: [id], onDelete: Cascade)
-  skor               Int
-  peringkat          Int
+  id                  String            @id @default(cuid())
+  mingguMulai         DateTime
+  mingguSelesai       DateTime
+  kategori            KategoriPeringkat
+  userId              String
+  user                User              @relation("PeringkatMingguan", fields: [userId], references: [id], onDelete: Cascade)
+  skor                Int
+  peringkat           Int
   /// Khusus kategori manual (Penulis Terbaik) — FK admin pemilih (sub-fase lanjutan).
   dipilihManualOlehId String?
-  createdAt          DateTime          @default(now())
+  createdAt           DateTime          @default(now())
 
   @@unique([mingguMulai, kategori, userId])
   @@index([mingguMulai, kategori, peringkat])
@@ -476,15 +478,15 @@ model PeringkatMingguan {
 // ============================================================
 
 model HalamanStatis {
-  id                String   @id @default(cuid())
-  slug              String   @unique /// "tentang", "redaksi", "pedoman-media-siber", dll
-  judul             String
-  konten            String   @db.Text /// rich text, editable via /admin/halaman
+  id                   String  @id @default(cuid())
+  slug                 String  @unique /// "tentang", "redaksi", "pedoman-media-siber", dll
+  judul                String
+  konten               String  @db.Text /// rich text, editable via /admin/halaman
   terakhirDiubahOlehId String?
-  terakhirDiubahOleh   User?  @relation("HalamanDiubahOleh", fields: [terakhirDiubahOlehId], references: [id])
+  terakhirDiubahOleh   User?   @relation("HalamanDiubahOleh", fields: [terakhirDiubahOlehId], references: [id])
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ============================================================
@@ -492,22 +494,22 @@ model HalamanStatis {
 // ============================================================
 
 model Tokoh {
-  id           String   @id @default(cuid())
+  id           String  @id @default(cuid())
   nama         String
-  slug         String   @unique
-  julukan      String?  /// contoh: "Bung Karno", "Bapak Marhaenisme"
-  gambar       String?  /// URL foto (object storage / Supabase Storage)
-  biografi     String   @db.Text
-  kutipan      String?  @db.Text /// kutipan singkat untuk kartu tokoh
-  lahir        Int?     /// tahun lahir
-  wafat        Int?     /// tahun wafat; null = masih hidup
-  status       String   @default("AKTIF") /// "AKTIF" | "ARSIP"
-  urutan       Int      @default(0) /// urutan tampil; 0 = setelah nama
+  slug         String  @unique
+  julukan      String? /// contoh: "Bung Karno", "Bapak Marhaenisme"
+  gambar       String? /// URL foto (object storage / Supabase Storage)
+  biografi     String  @db.Text
+  kutipan      String? @db.Text /// kutipan singkat untuk kartu tokoh
+  lahir        Int? /// tahun lahir
+  wafat        Int? /// tahun wafat; null = masih hidup
+  status       String  @default("AKTIF") /// "AKTIF" | "ARSIP"
+  urutan       Int     @default(0) /// urutan tampil; 0 = setelah nama
   dibuatOlehId String?
-  dibuatOleh   User?    @relation("TokohDibuatOleh", fields: [dibuatOlehId], references: [id])
+  dibuatOleh   User?   @relation("TokohDibuatOleh", fields: [dibuatOlehId], references: [id])
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status])
   @@index([urutan])
@@ -520,21 +522,21 @@ model Tokoh {
 // ============================================================
 
 model Iklan {
-  id             String         @id @default(cuid())
+  id             String          @id @default(cuid())
   nama           String
   gambarUrl      String /// banner (upload /api/media atau URL manual)
   tautanUrl      String /// tujuan klik — divalidasi http(s) di API
   lokasiSlot     LokasiSlotIklan
-  urutan         Int            @default(0) /// urutan tampil dalam slot
+  urutan         Int             @default(0) /// urutan tampil dalam slot
   tanggalMulai   DateTime?
   tanggalSelesai DateTime? /// AKTIF di luar rentang tidak dirender
-  status         StatusIklan    @default(DRAFT)
-  jumlahKlik     Int            @default(0)
+  status         StatusIklan     @default(DRAFT)
+  jumlahKlik     Int             @default(0)
   dibuatOlehId   String?
-  dibuatOleh     User?          @relation("IklanDibuatOleh", fields: [dibuatOlehId], references: [id])
+  dibuatOleh     User?           @relation("IklanDibuatOleh", fields: [dibuatOlehId], references: [id])
 
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status, lokasiSlot])
 }
@@ -549,7 +551,7 @@ model Donasi {
   verifikasiOleh   User?        @relation("DonasiDiverifikasiOleh", fields: [verifikasiOlehId], references: [id])
   verifikasiAt     DateTime?
 
-  createdAt        DateTime     @default(now())
+  createdAt DateTime @default(now())
 
   @@index([status, createdAt])
 }
@@ -559,18 +561,18 @@ model Donasi {
 // ============================================================
 
 model AuditLog {
-  id            String   @id @default(cuid())
-  aktorId       String?
-  aktor         User?    @relation(fields: [aktorId], references: [id])
-  aksi          String   /// contoh: "artikel.update", "role.create"
-  entitasTipe   String   /// "Artikel" | "User" | "Role" | "HalamanStatis" | ...
-  entitasId     String
+  id          String  @id @default(cuid())
+  aktorId     String?
+  aktor       User?   @relation(fields: [aktorId], references: [id])
+  aksi        String /// contoh: "artikel.update", "role.create"
+  entitasTipe String /// "Artikel" | "User" | "Role" | "HalamanStatis" | ...
+  entitasId   String
   /// Snapshot JSON sebelum/sesudah — transparansi internal & forensik.
-  dataSebelum   Json?
-  dataSesudah   Json?
-  alamatIp      String?
+  dataSebelum Json?
+  dataSesudah Json?
+  alamatIp    String?
 
-  tanggal       DateTime @default(now())
+  tanggal DateTime @default(now())
 
   @@index([entitasTipe, entitasId])
   @@index([aktorId])
@@ -606,7 +608,7 @@ model TokenPemulihan {
   token         String    @unique /// 64 karakter hex (randomBytes 32)
   dipakaiAt     DateTime? /// sekali pakai
   kedaluwarsaAt DateTime
-  dibuatOlehId  String?   /// di-set bila dibuat manual oleh admin (pintu darurat)
+  dibuatOlehId  String? /// di-set bila dibuat manual oleh admin (pintu darurat)
   dibuatOleh    User?     @relation("PemulihanDibuatOleh", fields: [dibuatOlehId], references: [id], onDelete: SetNull)
   createdAt     DateTime  @default(now())
 
@@ -623,7 +625,7 @@ model AjusPoin {
   id           String   @id @default(cuid())
   userId       String
   user         User     @relation("AjusPoinUser", fields: [userId], references: [id], onDelete: Cascade)
-  poin         Int      /// + (kontribusi lapangan) atau - (pelanggaran etika)
+  poin         Int /// + (kontribusi lapangan) atau - (pelanggaran etika)
   alasan       String   @db.Text /// wajib — jejak keputusan Super Admin
   dibuatOlehId String?
   dibuatOleh   User?    @relation("AjusPoinOleh", fields: [dibuatOlehId], references: [id], onDelete: SetNull)
@@ -637,18 +639,18 @@ model AjusPoin {
 // ============================================================
 
 model HakJawab {
-  id                 String        @id @default(cuid())
-  namaPengaju        String /// 2–80 karakter
-  emailPengaju       String? /// opsional — untuk balasan langsung
-  judulPemberitaan   String
-  urlPemberitaan     String?
-  isi                String        @db.Text /// maks 5000 karakter
-  status             StatusHakJawab @default(MENUNGGU)
-  jawabanRedaksi     String?       @db.Text
-  dijawabOlehId      String?
-  dijawabOleh        User?         @relation("HakJawabDijawabOleh", fields: [dijawabOlehId], references: [id], onDelete: SetNull)
-  dijawabAt          DateTime?
-  createdAt          DateTime      @default(now())
+  id               String         @id @default(cuid())
+  namaPengaju      String /// 2–80 karakter
+  emailPengaju     String? /// opsional — untuk balasan langsung
+  judulPemberitaan String
+  urlPemberitaan   String?
+  isi              String         @db.Text /// maks 5000 karakter
+  status           StatusHakJawab @default(MENUNGGU)
+  jawabanRedaksi   String?        @db.Text
+  dijawabOlehId    String?
+  dijawabOleh      User?          @relation("HakJawabDijawabOleh", fields: [dijawabOlehId], references: [id], onDelete: SetNull)
+  dijawabAt        DateTime?
+  createdAt        DateTime       @default(now())
 
   @@index([status, createdAt])
 }
@@ -660,27 +662,27 @@ model HakJawab {
 // ============================================================
 
 model KonfigurasiDonasi {
-  id             String   @id @default("utama")
-  bankNama       String
-  rekeningNomor  String
-  atasNama       String
-  qrisUrl        String?
-  diubahOlehId   String?
-  diubahOleh     User?    @relation("KonfigDonasiOleh", fields: [diubahOlehId], references: [id], onDelete: SetNull)
-  updatedAt      DateTime @updatedAt
+  id            String   @id @default("utama")
+  bankNama      String
+  rekeningNomor String
+  atasNama      String
+  qrisUrl       String?
+  diubahOlehId  String?
+  diubahOleh    User?    @relation("KonfigDonasiOleh", fields: [diubahOlehId], references: [id], onDelete: SetNull)
+  updatedAt     DateTime @updatedAt
 }
 
 /// Konfigurasi rekening & QRIS khusus pembayaran iuran kas kader.
 /// Single-row (id tetap "utama") dan terpisah dari konfigurasi donasi.
 model KonfigurasiKas {
-  id           String   @id @default("utama")
-  bankNama     String
+  id            String   @id @default("utama")
+  bankNama      String
   rekeningNomor String
-  atasNama     String
-  qrisUrl      String?
-  diubahOlehId String?
-  diubahOleh   User?    @relation("KonfigKasDiubahOleh", fields: [diubahOlehId], references: [id], onDelete: SetNull)
-  updatedAt    DateTime @updatedAt
+  atasNama      String
+  qrisUrl       String?
+  diubahOlehId  String?
+  diubahOleh    User?    @relation("KonfigKasDiubahOleh", fields: [diubahOlehId], references: [id], onDelete: SetNull)
+  updatedAt     DateTime @updatedAt
 }
 
 // ============================================================
@@ -719,16 +721,16 @@ model KonfigurasiIuranKas {
 /// Satu alokasi kewajiban per kader per pekan; minggu yang belum dibuat
 /// direpresentasikan sebagai BELUM_BAYAR pada matrix.
 model IuranKas {
-  id         String        @id @default(cuid())
-  kaderId    String
-  kader      User          @relation("IuranKasKader", fields: [kaderId], references: [id], onDelete: Cascade)
-  mingguMulai DateTime     @db.Date
-  nominal    Int
-  status     StatusIuranKas @default(BELUM_BAYAR)
+  id           String            @id @default(cuid())
+  kaderId      String
+  kader        User              @relation("IuranKasKader", fields: [kaderId], references: [id], onDelete: Cascade)
+  mingguMulai  DateTime          @db.Date
+  nominal      Int
+  status       StatusIuranKas    @default(BELUM_BAYAR)
   tanggalLunas DateTime?
-  alokasi    AlokasiIuranKas[]
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  alokasi      AlokasiIuranKas[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@unique([kaderId, mingguMulai])
   @@index([mingguMulai, status])
@@ -795,7 +797,7 @@ model KatalogBadge {
   id         String   @id @default(cuid())
   jenisBadge String   @unique /// "ARTIKEL_FIRST" dst — sama dgn Pencapaian.jenisBadge
   label      String
-  gambarUrl  String?  /// custom image; null → fallback ikon bintang SVG
+  gambarUrl  String? /// custom image; null → fallback ikon bintang SVG
   deskripsi  String?
   aktif      Boolean  @default(true)
   updatedAt  DateTime @updatedAt
@@ -823,18 +825,35 @@ model Follower {
 // ============================================================
 
 model Notifikasi {
-  id        String          @id @default(cuid())
+  id        String         @id @default(cuid())
   userId    String
-  user      User            @relation("NotifikasiUser", fields: [userId], references: [id], onDelete: Cascade)
+  user      User           @relation("NotifikasiUser", fields: [userId], references: [id], onDelete: Cascade)
   judul     String
-  isi       String          @db.Text
-  tipe      TipeNotifikasi  @default(INFO)
-  dibaca    Boolean         @default(false)
-  tautan    String?           /// deep-link tujuan saat item diklik (mis. /dasbor/pesan)
-  createdAt DateTime        @default(now())
+  isi       String         @db.Text
+  tipe      TipeNotifikasi @default(INFO)
+  dibaca    Boolean        @default(false)
+  tautan    String? /// deep-link tujuan saat item diklik (mis. /dasbor/pesan)
+  createdAt DateTime       @default(now())
 
   @@index([userId, dibaca])
   @@index([createdAt])
+}
+
+// ============================================================
+// BOOKMARK — artikel tersimpan kader.
+// ============================================================
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artikelId String
+  artikel   Artikel  @relation(fields: [artikelId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, artikelId])
+  @@index([userId, createdAt])
+  @@index([artikelId])
 }
 
 // ============================================================

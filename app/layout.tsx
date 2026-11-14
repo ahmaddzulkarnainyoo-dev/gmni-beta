@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { inter, lora, plexMono } from "./fonts";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ToastProvider } from "@/components/ui/ToastProvider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://infomarhaen.id"),
@@ -46,7 +48,7 @@ export default function RootLayout({
         >
           Lewati ke konten
         </a>
-        {children}
+        <AuthProvider><ToastProvider>{children}</ToastProvider></AuthProvider>
       </body>
     </html>
   );

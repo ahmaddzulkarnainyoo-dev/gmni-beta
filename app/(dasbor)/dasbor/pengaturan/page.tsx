@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { TogglePrivasi } from "@/components/dasbor/TogglePrivasi";
 import { WidgetDuaFaktor } from "@/components/dasbor/WidgetDuaFaktor";
 import { WidgetFotoProfil } from "@/components/dasbor/WidgetFotoProfil";
+import { FormProfil } from "@/components/dasbor/FormProfil";
 
 export const metadata: Metadata = { title: "Pengaturan" };
 export const dynamic = "force-dynamic";
@@ -17,6 +18,10 @@ export default async function HalamanPengaturan() {
       namaLengkap: true,
       username: true,
       email: true,
+      bio: true,
+      daerahAsal: true,
+      cabangDpc: true,
+      komisariat: true,
       fotoProfil: true,
       profilTersembunyi: true,
       is2FAEnabled: true,
@@ -35,25 +40,8 @@ export default async function HalamanPengaturan() {
         </p>
       </div>
 
-      <div className="mt-6 border-2 border-hitam-900 bg-white p-5">
-        <p className="font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">
-          Akun
-        </p>
-        <dl className="mt-3 grid gap-3 text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-hitam-500">Nama</dt>
-            <dd className="font-semibold text-hitam-900">{pengguna.namaLengkap}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-hitam-500">Username</dt>
-            <dd className="font-mono text-hitam-900">@{pengguna.username}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-hitam-500">Email</dt>
-            <dd className="text-hitam-900">{pengguna.email}</dd>
-          </div>
-        </dl>
-      </div>
+      <div className="mt-6 border-2 border-hitam-900 bg-white p-5"><p className="font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">Akun</p><dl className="mt-3 grid gap-3 text-sm"><div className="flex justify-between gap-4"><dt className="text-hitam-500">Username</dt><dd className="font-mono text-hitam-900">@{pengguna.username}</dd></div><div className="flex justify-between gap-4"><dt className="text-hitam-500">Email</dt><dd className="text-hitam-900">{pengguna.email}</dd></div></dl></div>
+      <FormProfil awal={pengguna} />
 
       <WidgetFotoProfil urlAwal={pengguna.fotoProfil} namaLengkap={pengguna.namaLengkap} />
 

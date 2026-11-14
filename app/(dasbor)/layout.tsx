@@ -13,6 +13,7 @@ const MENU_DASBOR: Array<{ label: string; href: string }> = [
   { label: "Iuran Kas", href: "/dasbor/kas" },
   { label: "Tulis Artikel", href: "/dasbor/tulis" },
   { label: "Tulisan Saya", href: "/dasbor/tulisan-saya" },
+  { label: "Tersimpan", href: "/dasbor/tersimpan" },
   { label: "Pesan", href: "/dasbor/pesan" },
   { label: "Notifikasi", href: "/dasbor/notifikasi" },
   { label: "Pencapaian", href: "/dasbor/pencapaian" },

@@ -12,6 +12,8 @@ import { SlotIklanSidebar } from "@/components/publik/SlotIklanSidebar";
 import { TombolBagikan } from "@/components/publik/TombolBagikan";
 import { TombolApresiasi } from "@/components/publik/TombolApresiasi";
 import { SelectionShareToolbar } from "@/components/publik/SelectionShareToolbar";
+import { TombolBookmark } from "@/components/publik/TombolBookmark";
+import { estimasiWaktuBaca } from "@/lib/reading-time";
 
 export const dynamic = "force-dynamic";
 
@@ -134,12 +136,14 @@ export default async function HalamanArtikel({
               Nama disamarkan
             </span>
           )}
+          <span className="font-mono text-[11px] uppercase tracking-widest text-hitam-400">{estimasiWaktuBaca(artikel.konten)} menit baca</span>
         </div>
       </header>
 
       <div className="mt-6 flex flex-wrap items-center gap-2 border-y-2 border-hitam-900 py-3">
         <TombolApresiasi artikelId={artikel.id} />
         <TombolBagikan judul={artikel.judul} url={urlArtikel} />
+        <TombolBookmark artikelId={artikel.id} login={Boolean(sesi)} />
       </div>
 
       <div
