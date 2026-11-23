@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
  * pemulihan 1x), konfirmasi, uji kode, dan nonaktifkan. Gaya konsisten
  * dengan TogglePrivasi (border tegas, label mono, aksen gmnimerah).
  */
-export function WidgetDuaFaktor({ aktifAwal }: { aktifAwal: boolean }) {
+export function WidgetDuaFaktor({ aktifAwal, wajib = false }: { aktifAwal: boolean; wajib?: boolean }) {
   const [aktif, setAktif] = useState(aktifAwal);
   const [tahap, setTahap] = useState<"idle" | "setup">("idle");
   const [uri, setUri] = useState("");
@@ -153,8 +153,9 @@ export function WidgetDuaFaktor({ aktifAwal }: { aktifAwal: boolean }) {
         Autentikasi Dua Faktor (2FA)
       </h2>
       <p className="mt-1 text-sm text-hitam-500">
-        Sangat disarankan untuk Super Admin &amp; Editor. Setelah aktif, login
-        meminta kode 6 digit dari aplikasi authenticator.
+        {wajib
+          ? "Wajib untuk Super Admin dan Editor sebelum kembali ke area admin."
+          : "Lindungi akun dengan kode 6 digit dari aplikasi authenticator."} Setelah aktif, setiap login akan meminta kode keamanan.
       </p>
 
       <p

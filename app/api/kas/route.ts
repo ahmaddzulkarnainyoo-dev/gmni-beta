@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { requireActiveUser } from "@/lib/session";
 import {
   awalMingguKas,
   mingguDalamTahun,
@@ -44,9 +44,11 @@ function pesanKonflikKas(error: unknown): boolean {
 
 /** GET /api/kas — status mingguan dan riwayat kas kader yang sedang masuk. */
 export async function GET(request: Request) {
-  const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
+  let user;
+  try {
+    user = await requireActiveUser();
+  } catch {
+    return NextResponse.json({ error: "Sesi akun tidak aktif. Silakan masuk kembali." }, { status: 401 });
   }
 
   try {
@@ -137,9 +139,11 @@ export async function GET(request: Request) {
 
 /** POST /api/kas — ajukan transfer untuk rentang minggu berurutan. */
 export async function POST(request: Request) {
-  const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
+  let user;
+  try {
+    user = await requireActiveUser();
+  } catch {
+    return NextResponse.json({ error: "Sesi akun tidak aktif. Silakan masuk kembali." }, { status: 401 });
   }
 
   let form: FormData;

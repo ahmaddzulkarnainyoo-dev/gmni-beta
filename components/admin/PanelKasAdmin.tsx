@@ -343,6 +343,15 @@ export function PanelKasAdmin() {
         <p className="mt-1 text-sm text-hitam-500">
           Tinjau bukti transfer, catat pembayaran tunai, dan pantau status mingguan kader.
         </p>
+        <div className="mt-3 border-l-4 border-gmnimerah-500 bg-kertas-100 px-3 py-2 text-xs leading-relaxed text-hitam-700">
+          <p className="font-bold text-hitam-900">Alur kerja bendahara:</p>
+          <ol className="mt-1 list-inside list-decimal space-y-0.5">
+            <li>Pilih minggu untuk melihat kader yang belum lunas.</li>
+            <li>Buka pengajuan yang menunggu, lalu lihat bukti transfernya.</li>
+            <li>Pilih Setujui jika bukti valid, atau Tolak dan isi alasan yang jelas.</li>
+            <li>Gunakan Catat Pembayaran Tunai hanya untuk pembayaran yang diterima langsung.</li>
+          </ol>
+        </div>
       </header>
       {eror && (
         <p role="alert" className="mt-4 border-2 border-gmnimerah-500 bg-gmnimerah-50 px-3 py-2 text-sm font-semibold text-gmnimerah-700">
@@ -540,7 +549,7 @@ export function PanelKasAdmin() {
                         href={`/api/kas/${item.id}/bukti`}
                         target="_blank"
                         rel="noreferrer"
-                        className="border-2 border-hitam-900 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-hitam-900 hover:bg-kertas-100"
+                        className="min-h-11 border-2 border-hitam-900 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-hitam-900 hover:bg-kertas-100"
                       >
                         Lihat Bukti
                       </a>
@@ -606,13 +615,13 @@ export function PanelKasAdmin() {
             </label>
             <a
               href={tautanEkspor}
-              className="bg-hitam-900 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-white hover:bg-hitam-700"
+                        className="min-h-11 bg-hitam-900 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-white hover:bg-hitam-700"
             >
               Ekspor CSV
             </a>
             <a
               href={tautanEksporExcel}
-              className="bg-emerald-700 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-white hover:bg-emerald-800"
+                        className="min-h-11 bg-emerald-700 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-white hover:bg-emerald-800"
             >
               Ekspor Excel
             </a>

@@ -86,6 +86,15 @@ export function FormPendaftaranPublik({ tokenTidakSah }: { tokenTidakSah: boolea
           Pendaftaran terbuka untuk seluruh kader GMNI. Akun aktif setelah
           diverifikasi Admin Redaksi.
         </p>
+        <div className="mt-3 border-l-4 border-gmnimerah-500 bg-kertas-100 px-3 py-2 text-xs leading-relaxed text-hitam-700">
+          <p className="font-bold text-hitam-900">Cara daftar:</p>
+          <ol className="mt-1 list-inside list-decimal space-y-0.5">
+            <li>Isi data kader sesuai identitas yang benar.</li>
+            <li>Buat sandi minimal 12 karakter dan simpan baik-baik.</li>
+            <li>Kirim formulir, lalu tunggu persetujuan Admin Redaksi.</li>
+            <li>Setelah disetujui, masuk memakai NIM dan sandi.</li>
+          </ol>
+        </div>
         {tokenTidakSah && (
           <p className="mt-2 border border-hitam-300 bg-kertas-100 px-3 py-2 text-xs leading-relaxed text-hitam-600">
             Tautan undangan kamu tidak valid atau sudah dipakai — silakan

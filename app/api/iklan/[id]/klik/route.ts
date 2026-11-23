@@ -12,14 +12,23 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  let tujuan: string | null = null;
   try {
     const iklan = await prisma.iklan.findUnique({ where: { id } });
     if (!iklan || !iklanSedangTayang(iklan)) redirect("/");
+    let url: URL;
+    try {
+      url = new URL(iklan.tautanUrl);
+    } catch {
+      redirect("/");
+    }
+    if (url.protocol !== "http:" && url.protocol !== "https:") redirect("/");
+    tujuan = url.toString();
     await prisma.iklan
       .update({ where: { id }, data: { jumlahKlik: { increment: 1 } } })
       .catch(() => undefined);
-    redirect(iklan.tautanUrl);
   } catch {
-    redirect("/");
+    tujuan = null;
   }
+  redirect(tujuan ?? "/");
 }

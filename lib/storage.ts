@@ -27,9 +27,28 @@ type KonfigurasiBucket = {
   allowedMimeTypes: string[];
 };
 
+/** Validasi isi file gambar, bukan hanya MIME yang dikirim browser. */
+export async function validasiGambar(file: File): Promise<string | null> {
+  const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  const cocok =
+    (file.type === "image/jpeg" && bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) ||
+    (file.type === "image/png" && bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 && bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a) ||
+    (file.type === "image/webp" && bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) ||
+    (file.type === "image/gif" && bytes.length >= 6 &&
+      bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 &&
+      bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61);
+  return cocok ? null : "Isi file tidak sesuai dengan format gambar yang dipilih.";
+}
+
 const BUCKET_DEFAULT: KonfigurasiBucket[] = [
   {
     id: "artikel",
+    public: true,
+    fileSizeLimit: 5 * 1024 * 1024,
+    allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"],
+  },
+  {
+    id: "kas",
     public: true,
     fileSizeLimit: 5 * 1024 * 1024,
     allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"],
@@ -62,7 +81,8 @@ function daftarKonfigurasiBucket(): KonfigurasiBucket[] {
   const tambahan = [
     namaArtikel && { id: namaArtikel, public: true, fileSizeLimit: 5 * 1024 * 1024, allowedMimeTypes: BUCKET_DEFAULT[0].allowedMimeTypes },
     namaAvatar && { id: namaAvatar, public: true, fileSizeLimit: 2 * 1024 * 1024, allowedMimeTypes: BUCKET_DEFAULT[1].allowedMimeTypes },
-    namaKas && { id: namaKas, public: false, fileSizeLimit: 5 * 1024 * 1024, allowedMimeTypes: BUCKET_DEFAULT[3].allowedMimeTypes },
+    process.env.SUPABASE_KAS_MEDIA_BUCKET?.trim() && { id: process.env.SUPABASE_KAS_MEDIA_BUCKET.trim(), public: true, fileSizeLimit: 5 * 1024 * 1024, allowedMimeTypes: BUCKET_DEFAULT[0].allowedMimeTypes },
+    namaKas && { id: namaKas, public: false, fileSizeLimit: 5 * 1024 * 1024, allowedMimeTypes: BUCKET_DEFAULT[4].allowedMimeTypes },
   ].filter((bucket): bucket is KonfigurasiBucket => Boolean(bucket));
   for (const bucket of tambahan) {
     if (!hasil.some((sudahAda) => sudahAda.id === bucket.id)) hasil.push(bucket);
@@ -223,7 +243,7 @@ export async function unggahKeSupabase(
     Authorization: `Bearer ${key}`,
     apikey: key,
     "Content-Type": tipeKonten,
-    "x-upsert": "true",
+    "x-upsert": "false",
   };
 
   const res = await fetch(endpoint, {

@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 /**
  * Bantuan RBAC sisi server (blueprint Bagian 5):
@@ -39,6 +40,17 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 export async function requireAuthUser(): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  return user;
+}
+
+/** Memastikan sesi masih berasal dari akun aktif sebelum aksi sensitif. */
+export async function requireActiveUser(): Promise<SessionUser> {
+  const user = await requireAuthUser();
+  const rekaman = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { statusAkun: true },
+  });
+  if (!rekaman || rekaman.statusAkun !== "AKTIF") redirect("/login");
   return user;
 }
 

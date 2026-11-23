@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAuthUser } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 import { LogoGMNI } from "@/components/brand/LogoGMNI";
 import { KickerLabel } from "@/components/ui/KickerLabel";
 import { AdminDrawer } from "@/components/admin/AdminDrawer";
@@ -53,6 +54,13 @@ export default async function AdminLayout({
   const isAdmin = user.roleNama === "Super Admin" || user.roleNama === "Editor";
   const punyaAksesKas = user.permissions.includes("kas.kelola");
   if (!isAdmin && !punyaAksesKas) redirect("/");
+  if (isAdmin) {
+    const keamanan = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { is2FAEnabled: true },
+    });
+    if (!keamanan?.is2FAEnabled) redirect("/dasbor/pengaturan?wajib2fa=1");
+  }
   const menu = isAdmin
     ? MENU_ADMIN.map((kelompok) => ({
         ...kelompok,
@@ -115,7 +123,7 @@ export default async function AdminLayout({
             ))}
           </nav>
         </aside>
-        <div className="min-w-0 flex-1">{children}</div>
+        <main id="konten" className="min-w-0 flex-1">{children}</main>
       </div>
     </div>
   );

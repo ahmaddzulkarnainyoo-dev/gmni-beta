@@ -197,6 +197,15 @@ export function PanelKasKader() {
           Bayar minggu berjalan atau beberapa minggu ke depan sekaligus. Pembayaran baru lunas
           setelah diverifikasi bendahara.
         </p>
+        <div className="mt-3 border-l-4 border-gmnimerah-500 bg-kertas-100 px-3 py-2 text-xs leading-relaxed text-hitam-700">
+          <p className="font-bold text-hitam-900">Cara mengajukan iuran:</p>
+          <ol className="mt-1 list-inside list-decimal space-y-0.5">
+            <li>Transfer ke rekening atau QRIS resmi di bawah.</li>
+            <li>Pilih Senin sebagai awal minggu dan jumlah minggu yang dibayar.</li>
+            <li>Isi tanggal pembayaran, unggah bukti asli maksimal 5 MB, lalu kirim.</li>
+            <li>Tunggu verifikasi bendahara; status berubah lunas setelah disetujui.</li>
+          </ol>
+        </div>
       </header>
 
       {eror && (

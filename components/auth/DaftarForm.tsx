@@ -81,6 +81,14 @@ export function DaftarForm({
           Diundang oleh <strong className="text-hitam-900">{pengundang}</strong>.
           Pendaftaran terbatas untuk kader dengan token undangan yang sah.
         </p>
+        <div className="mt-3 border-l-4 border-gmnimerah-500 bg-kertas-100 px-3 py-2 text-xs leading-relaxed text-hitam-700">
+          <p className="font-bold text-hitam-900">Langkah berikutnya:</p>
+          <ol className="mt-1 list-inside list-decimal space-y-0.5">
+            <li>Lengkapi data kader dan buat sandi minimal 12 karakter.</li>
+            <li>Kirim pendaftaran melalui tombol di bawah.</li>
+            <li>Gunakan NIM dan sandi tersebut untuk masuk setelah akun aktif.</li>
+          </ol>
+        </div>
       </div>
 
       {eror && (

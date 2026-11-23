@@ -101,7 +101,7 @@ export default async function DasborLayout({
             <TombolKeluar variant="link-hari" className="mt-2" />
           </nav>
         </aside>
-        <div className="min-w-0 flex-1">{children}</div>
+        <main id="konten" className="min-w-0 flex-1">{children}</main>
       </div>
     </div>
   );

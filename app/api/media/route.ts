@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/session";
-import { unggahKeSupabase } from "@/lib/storage";
+import { unggahKeSupabase, validasiGambar } from "@/lib/storage";
 
 const ROLES_ADMIN = ["Super Admin", "Editor"];
 const TIPE_DITERIMA = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
@@ -64,6 +64,10 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    const alasanIsi = await validasiGambar(file);
+    if (alasanIsi) {
+      return NextResponse.json({ error: alasanIsi }, { status: 400 });
+    }
     // Kader (foto profil & gambar isi artikel) dibatasi 2 MB; admin 5 MB.
     const maksByte = isAdmin ? MAKS_BYTE_ARTIKEL : MAKS_BYTE_PROFIL;
     if (file.size > maksByte) {
@@ -92,6 +96,8 @@ export async function POST(request: Request) {
     const bucket =
       jenis === "profil"
         ? process.env.SUPABASE_AVATAR_BUCKET?.trim() || "avatars"
+        : jenis === "kas"
+          ? process.env.SUPABASE_KAS_MEDIA_BUCKET?.trim() || "kas"
         : process.env.SUPABASE_STORAGE_BUCKET?.trim() || "artikel";
     const nama = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ekstensi}`;
 

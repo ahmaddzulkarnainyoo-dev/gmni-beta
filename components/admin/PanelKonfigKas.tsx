@@ -38,6 +38,9 @@ export function PanelKonfigKas({ awal }: { awal: { bankNama: string; rekeningNom
 
   return <form onSubmit={simpan} className="mt-3 border-2 border-hitam-900 bg-white p-5">
     {!awal.dariDb && <p className="mb-3 border border-hitam-300 bg-kertas-100 px-3 py-2 text-xs text-hitam-600">Belum ada konfigurasi rekening kas tersimpan.</p>}
+    <p className="mb-4 border-l-4 border-gmnimerah-500 bg-kertas-100 px-3 py-2 text-xs leading-relaxed text-hitam-700">
+      Isi rekening yang menerima iuran kader. Unggah QRIS bila tersedia, lalu tekan Simpan agar informasi ini tampil di halaman iuran kader.
+    </p>
     <div className="grid gap-4 md:grid-cols-2">
       <label><span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">Nama Bank</span><input required value={bankNama} onChange={(e) => setBankNama(e.target.value)} className="w-full border-2 border-hitam-900 px-3 py-2 text-sm" /></label>
       <label><span className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-hitam-600">Nomor Rekening</span><input required value={rekeningNomor} onChange={(e) => setRekeningNomor(e.target.value)} className="w-full border-2 border-hitam-900 px-3 py-2 font-mono text-sm" /></label>

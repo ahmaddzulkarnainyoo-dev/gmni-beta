@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { requireActiveUser } from "@/lib/session";
 import { urlSementaraBuktiKas } from "@/lib/storage-kas";
 
 type Context = { params: Promise<{ id: string }> };
 
 /** GET /api/kas/[id]/bukti — signed URL singkat untuk pemilik atau bendahara. */
 export async function GET(_request: Request, { params }: Context) {
-  const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
+  let user;
+  try {
+    user = await requireActiveUser();
+  } catch {
+    return NextResponse.json({ error: "Sesi akun tidak aktif. Silakan masuk kembali." }, { status: 401 });
   }
   const { id } = await params;
 

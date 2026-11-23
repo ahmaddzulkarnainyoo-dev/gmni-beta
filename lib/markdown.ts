@@ -20,7 +20,7 @@ function esc(s: string): string {
 
 function urlAman(url: string): string | null {
   const bersih = url.trim();
-  if (!/^(https?:\/\/|\/)/i.test(bersih)) return null;
+  if (!/^(https?:\/\/|\/(?!\/))/i.test(bersih)) return null;
   if (/^(javascript|data|vbscript):/i.test(bersih)) return null;
   return bersih;
 }

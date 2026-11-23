@@ -276,7 +276,16 @@ export function FormArtikel({
   }
 
   return (
-    <form onSubmit={simpan} className="pb-28 sm:pb-6">
+    <form onSubmit={simpan} className="pb-[calc(7rem+env(safe-area-inset-bottom))] sm:pb-6">
+      <div className="mb-4 border-l-4 border-gmnimerah-500 bg-kertas-100 px-3 py-2 text-xs leading-relaxed text-hitam-700">
+        <p className="font-bold text-hitam-900">Cara menulis dan mengirim artikel:</p>
+        <ol className="mt-1 list-inside list-decimal space-y-0.5">
+          <li>Isi judul, ringkasan, kategori, dan isi tulisan minimal 40 karakter.</li>
+          <li>Gunakan toolbar untuk format; tombol unggah gambar akan menyisipkan gambar ke posisi kursor.</li>
+          <li>Pilih Pratinjau untuk memeriksa tampilan sebelum menyimpan.</li>
+          <li>Simpan Draf untuk melanjutkan nanti, atau Simpan &amp; Ajukan agar redaksi meninjau tulisan.</li>
+        </ol>
+      </div>
       {/* Aksi halaman dipisahkan dari toolbar agar tidak bertumpuk di mobile. */}
       <div className="sticky top-0 z-30 -mx-3 mb-3 border-b border-hitam-200 bg-kertas-50/90 px-3 py-2 backdrop-blur-md sm:-mx-4 sm:mb-4 sm:px-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -307,7 +316,7 @@ export function FormArtikel({
         <div
           role="toolbar"
           aria-label="Pemformatan tulisan"
-          className="sticky bottom-16 z-20 -mx-3 mb-6 border-y border-hitam-200 bg-kertas-50/95 px-3 py-1.5 shadow-[0_-3px_12px_rgba(0,0,0,0.08)] backdrop-blur-md sm:static sm:mx-0 sm:border-y-0 sm:px-0 sm:py-0 sm:shadow-none"
+          className="sticky bottom-16 z-20 -mx-3 mb-6 border-y border-hitam-200 bg-kertas-50/95 px-3 py-1.5 pb-[env(safe-area-inset-bottom)] shadow-[0_-3px_12px_rgba(0,0,0,0.08)] backdrop-blur-md sm:static sm:mx-0 sm:border-y-0 sm:px-0 sm:py-0 sm:shadow-none"
         >
           <div className="flex min-w-0 items-center gap-1 overflow-x-auto pb-0.5">
             {SNIPPET_MD.map((s) => (
