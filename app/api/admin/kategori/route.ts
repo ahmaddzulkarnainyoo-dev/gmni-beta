@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import { slugify } from "@/lib/slug";
 
 const ROLES_ADMIN = ["Super Admin", "Editor"];
@@ -12,7 +12,7 @@ function teks(v: unknown): string | null {
 
 /** POST /api/admin/kategori — membuat kategori (Super Admin/Editor). */
 export async function POST(request: Request) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   }

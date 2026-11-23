@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import { mdKeHtml } from "@/lib/markdown";
+import { urlGambarValid } from "@/lib/image-url";
 import type { StatusArtikel, VisibilitasPenulis } from "@prisma/client";
 import { catatAktivitas, evaluasiBadgeKader, perbaruiStreak, tarikPoinEntitas } from "@/lib/gamifikasi";
 
@@ -34,7 +35,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   }
@@ -88,7 +89,13 @@ export async function PATCH(
     }
 
     const gambar = teks(body.gambarUtama);
-    if (gambar !== null) data.gambarUtama = gambar.length > 0 ? gambar.slice(0, 2000) : null;
+    if (gambar !== null) {
+      const gambarDipangkas = gambar.slice(0, 2000);
+      if (gambarDipangkas && !urlGambarValid(gambarDipangkas)) {
+        return NextResponse.json({ error: "URL gambar utama tidak valid." }, { status: 400 });
+      }
+      data.gambarUtama = gambarDipangkas || null;
+    }
 
     const kategoriId = teks(body.kategoriId);
     if (kategoriId !== null && kategoriId !== artikel.kategoriId) {
@@ -228,7 +235,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   }

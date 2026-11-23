@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUser } from "@/lib/session";
+import { requireActiveUser } from "@/lib/session";
 import { normalisasiKodePemulihan, verifikasiTotp } from "@/lib/totp";
 
 /** POST /api/kader/dua-faktor/nonaktifkan — matikan 2FA (butuh kode aktif/pemulihan). */
 export async function POST(req: Request) {
-  const user = await requireAuthUser();
+  const user = await requireActiveUser();
   const body = (await req.json().catch(() => null)) as { kode?: string } | null;
   const kode = (body?.kode ?? "").trim();
   if (!kode) {

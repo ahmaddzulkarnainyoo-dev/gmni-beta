@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import { LOKASI_SLOT, STATUS_IKLAN, tautanIklanValid } from "@/lib/monetisasi";
 
 const ROLES_ADMIN = ["Super Admin", "Editor"];
@@ -11,7 +11,7 @@ function teks(v: unknown): string | null {
   return t.length > 0 ? t : null;
 }
 
-async function tolak(user: Awaited<ReturnType<typeof getSessionUser>>) {
+async function tolak(user: Awaited<ReturnType<typeof getActiveSessionUser>>) {
   if (!user) return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   return NextResponse.json(
     { error: "Hanya Super Admin atau Editor yang dapat mengelola iklan." },
@@ -21,7 +21,7 @@ async function tolak(user: Awaited<ReturnType<typeof getSessionUser>>) {
 
 /** GET /api/admin/iklan — daftar semua iklan (Super Admin/Editor). */
 export async function GET() {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user || !user.roleNama || !ROLES_ADMIN.includes(user.roleNama)) {
     return tolak(user);
   }
@@ -34,7 +34,7 @@ export async function GET() {
 
 /** POST /api/admin/iklan — buat slot iklan baru (Super Admin/Editor). */
 export async function POST(request: Request) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user || !user.roleNama || !ROLES_ADMIN.includes(user.roleNama)) {
     return tolak(user);
   }

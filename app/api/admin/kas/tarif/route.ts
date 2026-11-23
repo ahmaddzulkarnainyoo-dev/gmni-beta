@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import {
   awalMingguKas,
   parseTanggalDateOnly,
@@ -10,7 +10,7 @@ import {
 
 /** POST /api/admin/kas/tarif — buat atau perbarui tarif efektif per pekan. */
 export async function POST(request: Request) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   }

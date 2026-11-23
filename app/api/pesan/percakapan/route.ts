@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import { apakahStaf, cariPercakapanSatuLawanSatu } from "@/lib/dm";
 
 /** GET /api/pesan/percakapan — daftar room aktif milikku (blueprint 8.5). */
 export async function GET(request: Request) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json(
       { error: "Harus masuk terlebih dahulu." },

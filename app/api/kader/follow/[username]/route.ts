@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 
 /**
  * POST /api/kader/follow/[username] — toggle ikuti / berhenti mengikuti
@@ -13,7 +13,7 @@ export async function POST(
   { params }: { params: Promise<{ username: string }> },
 ) {
   const { username } = await params;
-  const sesi = await getSessionUser();
+  const sesi = await getActiveSessionUser();
   if (!sesi) {
     return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   }

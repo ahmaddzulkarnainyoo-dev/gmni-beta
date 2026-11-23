@@ -20,6 +20,7 @@ export type SessionUser = {
   roleId?: string;
   roleNama?: string;
   permissions: string[];
+  twoFactorEnabled?: boolean;
 };
 
 export async function getSessionUser(): Promise<SessionUser | null> {
@@ -34,7 +35,28 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     roleId: u.roleId,
     roleNama: u.roleNama,
     permissions: u.permissions ?? [],
+    twoFactorEnabled: u.twoFactorEnabled,
   };
+}
+
+/** Mengembalikan sesi hanya bila status, role, dan kebijakan 2FA masih sinkron. */
+export async function getActiveSessionUser(): Promise<SessionUser | null> {
+  const user = await getSessionUser();
+  if (!user) return null;
+  const rekaman = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { statusAkun: true, roleId: true, is2FAEnabled: true },
+  });
+  if (
+    !rekaman ||
+    rekaman.statusAkun !== "AKTIF" ||
+    rekaman.roleId !== user.roleId ||
+    typeof user.twoFactorEnabled !== "boolean" ||
+    rekaman.is2FAEnabled !== user.twoFactorEnabled
+  ) {
+    return null;
+  }
+  return user;
 }
 
 export async function requireAuthUser(): Promise<SessionUser> {
@@ -45,12 +67,8 @@ export async function requireAuthUser(): Promise<SessionUser> {
 
 /** Memastikan sesi masih berasal dari akun aktif sebelum aksi sensitif. */
 export async function requireActiveUser(): Promise<SessionUser> {
-  const user = await requireAuthUser();
-  const rekaman = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { statusAkun: true },
-  });
-  if (!rekaman || rekaman.statusAkun !== "AKTIF") redirect("/login");
+  const user = await getActiveSessionUser();
+  if (!user) redirect("/login");
   return user;
 }
 

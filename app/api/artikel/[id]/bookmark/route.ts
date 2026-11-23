@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) return NextResponse.json({ tersimpan: false });
   const { id } = await params;
   const bookmark = await prisma.bookmark.findUnique({ where: { userId_artikelId: { userId: user.id, artikelId: id } }, select: { id: true } });
@@ -11,7 +11,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 }
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) return NextResponse.json({ error: "Harus masuk untuk menyimpan artikel." }, { status: 401 });
   const { id } = await params;
   const artikel = await prisma.artikel.findFirst({ where: { id, status: "TERBIT" }, select: { id: true } });
@@ -21,7 +21,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   const { id } = await params;
   await prisma.bookmark.deleteMany({ where: { userId: user.id, artikelId: id } });

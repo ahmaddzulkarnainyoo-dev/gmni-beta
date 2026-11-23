@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 
 const BATAS_MAKS = 100;
 
@@ -9,7 +9,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ percakapanId: string }> },
 ) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json(
       { error: "Harus masuk terlebih dahulu." },

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import { slugArtikelUnik } from "@/lib/slug";
 import { mdKeHtml } from "@/lib/markdown";
+import { urlGambarValid } from "@/lib/image-url";
 import type { StatusArtikel, VisibilitasPenulis } from "@prisma/client";
 
 const ROLES_ADMIN = ["Super Admin", "Editor"];
@@ -24,7 +25,7 @@ function teks(v: unknown): string | null {
 
 /** POST /api/admin/artikel — membuat artikel oleh Super Admin/Editor. */
 export async function POST(request: Request) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json(
       { error: "Harus masuk terlebih dahulu." },
@@ -118,6 +119,9 @@ export async function POST(request: Request) {
       typeof body.gambarUtama === "string" && body.gambarUtama.trim().length > 0
         ? body.gambarUtama.trim().slice(0, 2000)
         : null;
+    if (gambarUtama && !urlGambarValid(gambarUtama)) {
+      return NextResponse.json({ error: "URL gambar utama tidak valid." }, { status: 400 });
+    }
     const disematkan = body.disematkan === true;
     const jadwalMentah =
       typeof body.tanggalJadwal === "string" && body.tanggalJadwal.trim()

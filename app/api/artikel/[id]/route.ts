@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import { mdKeHtml } from "@/lib/markdown";
 import type { StatusArtikel, VisibilitasPenulis } from "@prisma/client";
 
@@ -20,7 +20,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const user = await getSessionUser();
+    const user = await getActiveSessionUser();
     if (!user) {
       return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
     }

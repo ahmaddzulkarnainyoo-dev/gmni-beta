@@ -26,11 +26,15 @@ import {
 // Batas brute-force OTP: 5x gagal → kunci 15 menit.
 const BATAS_GAGAL_OTP = 5;
 const DURASI_KUNCI_MS = 15 * 60 * 1000;
+const AUTH_SECRET = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+
+if (process.env.NODE_ENV === "production" && !AUTH_SECRET) {
+  throw new Error("AUTH_SECRET atau NEXTAUTH_SECRET wajib diatur di production.");
+}
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
-  secret:
-    process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? "info-marhaen-dev-secret",
+  secret: AUTH_SECRET,
   cookies: {
     sessionToken: {
       name:
@@ -196,6 +200,7 @@ export const authOptions: NextAuthOptions = {
           roleId: user.roleId,
           roleNama: user.role.nama,
           permissions: user.role.permissions.map((rp) => rp.permission.kode),
+          twoFactorEnabled: user.is2FAEnabled,
         };
       },
     }),
@@ -208,6 +213,7 @@ export const authOptions: NextAuthOptions = {
         token.roleId = user.roleId;
         token.roleNama = user.roleNama;
         token.permissions = user.permissions;
+        token.twoFactorEnabled = user.twoFactorEnabled;
       }
       if (trigger === "update" && session?.name) token.name = session.name;
       return token;
@@ -219,6 +225,7 @@ export const authOptions: NextAuthOptions = {
         session.user.roleId = token.roleId;
         session.user.roleNama = token.roleNama;
         session.user.permissions = token.permissions ?? [];
+        session.user.twoFactorEnabled = token.twoFactorEnabled;
       }
       return session;
     },

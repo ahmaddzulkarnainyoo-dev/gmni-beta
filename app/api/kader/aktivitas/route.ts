@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import { catatAktivitas, perbaruiStreak } from "@/lib/gamifikasi";
 
 /**
@@ -7,7 +7,7 @@ import { catatAktivitas, perbaruiStreak } from "@/lib/gamifikasi";
  * Idempoten 1x/hari (unique user+jenis+hari); dipakai widget dasbor.
  */
 export async function POST() {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import { LOKASI_SLOT, STATUS_IKLAN, tautanIklanValid } from "@/lib/monetisasi";
 
 const ROLES_ADMIN = ["Super Admin", "Editor"];
@@ -14,7 +14,7 @@ function teks(v: unknown): string | null {
 }
 
 async function gate() {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return { eror: NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 }) };
   }

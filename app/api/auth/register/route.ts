@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 const ROLE_KONTRIBUTOR = "Kontributor";
 
@@ -203,8 +204,24 @@ export async function POST(request: Request) {
     // Mode invite: kader baru langsung AKTIF. Token global ditandai dipakai;
     // token legacy kader dikosongkan (sekali pakai).
     if (pengundang) {
-      const [kaderUndang] = await prisma.$transaction([
-        prisma.user.create({
+      let kaderUndang;
+      try {
+        kaderUndang = await prisma.$transaction(
+          async (tx) => {
+            if (undanganGlobalId) {
+              const diklaim = await tx.tokenUndangan.updateMany({
+                where: { id: undanganGlobalId, dipakaiAt: null },
+                data: { dipakaiAt: new Date() },
+              });
+              if (diklaim.count !== 1) throw new Error("UNDANGAN_SUDAH_DIPAKAI");
+            } else {
+              const diklaim = await tx.user.updateMany({
+                where: { id: pengundang.id, tokenUndangan: token },
+                data: { tokenUndangan: null },
+              });
+              if (diklaim.count !== 1) throw new Error("UNDANGAN_SUDAH_DIPAKAI");
+            }
+            return tx.user.create({
           data: {
             namaLengkap,
             nim,
@@ -217,17 +234,19 @@ export async function POST(request: Request) {
             roleId: role.id,
             diundangOlehId: pengundang.id,
           },
-        }),
-        undanganGlobalId
-          ? prisma.tokenUndangan.update({
-              where: { id: undanganGlobalId },
-              data: { dipakaiAt: new Date() },
-            })
-          : prisma.user.update({
-              where: { id: pengundang.id },
-              data: { tokenUndangan: null },
-            }),
-      ]);
+            });
+          },
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+        );
+      } catch (error) {
+        if (error instanceof Error && error.message === "UNDANGAN_SUDAH_DIPAKAI") {
+          return NextResponse.json(
+            { error: "Token undangan tidak valid atau sudah dipakai." },
+            { status: 409 },
+          );
+        }
+        throw error;
+      }
 
       console.log(
         `[registrasi] Kader baru terdaftar (undang): ${kaderUndang.email} (diundang: ${pengundang.email})`,

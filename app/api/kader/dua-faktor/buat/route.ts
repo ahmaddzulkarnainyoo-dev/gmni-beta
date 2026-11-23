@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUser } from "@/lib/session";
+import { requireActiveUser } from "@/lib/session";
 import {
   buatKodePemulihan,
   buatSecretTotp,
@@ -14,7 +14,7 @@ import {
  * agar tidak bergantung penuh pada package `qrcode` saat runtime.
  */
 export async function POST() {
-  const user = await requireAuthUser();
+  const user = await requireActiveUser();
 
   const milik = await prisma.user.findUnique({
     where: { id: user.id },

@@ -19,7 +19,7 @@ export async function verifikasiRecaptcha(
   ip?: string | null,
 ): Promise<boolean> {
   if (!token) return false;
-  if (!SECRET) return true; // kunci belum dikonfigurasi — mode pengembangan.
+  if (!SECRET) return process.env.NODE_ENV !== "production";
 
   try {
     const params = new URLSearchParams({ secret: SECRET, response: token });

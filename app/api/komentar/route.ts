@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser, getSessionUser } from "@/lib/session";
 import { verifikasiRecaptcha } from "@/lib/recaptcha";
 import { catatAktivitas, evaluasiBadgeKader, perbaruiStreak } from "@/lib/gamifikasi";
+import { lewatRateLimit } from "@/lib/rate-limit";
 
 /**
  * POST /api/komentar — terima komentar publik artikel (blueprint 8.3).
@@ -40,7 +41,11 @@ export async function POST(request: Request) {
     }
 
     // Identitas: kader login → akun; pengunjung → nama publik.
-    const user = await getSessionUser();
+    const sesi = await getSessionUser();
+    const user = await getActiveSessionUser();
+    if (sesi && !user) {
+      return NextResponse.json({ error: "Akun Anda tidak aktif." }, { status: 403 });
+    }
     let penulisId: string | null = null;
     let namaTamu: string | null = null;
     if (user?.id) {
@@ -62,11 +67,23 @@ export async function POST(request: Request) {
       namaTamu = nama;
     }
 
+    const alamatIp =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      request.headers.get("x-real-ip")?.trim() ??
+      "tanpa-ip";
+    const kunciRateLimit = penulisId ? `komentar:user:${penulisId}` : `komentar:ip:${alamatIp}`;
+    if (!lewatRateLimit(kunciRateLimit, penulisId ? 10 : 5, 60_000)) {
+      return NextResponse.json(
+        { error: "Terlalu banyak komentar. Coba lagi sebentar lagi." },
+        { status: 429 },
+      );
+    }
+
     // Perlindungan anti-bot (blueprint 8.3 & 14).
     const lolos = await verifikasiRecaptcha(
       body.recaptchaToken ?? "",
       "komentar",
-      request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip"),
+      alamatIp,
     );
     if (!lolos) {
       return NextResponse.json(

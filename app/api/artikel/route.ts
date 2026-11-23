@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import { slugArtikelUnik } from "@/lib/slug";
 import { mdKeHtml } from "@/lib/markdown";
 import type { VisibilitasPenulis } from "@prisma/client";
@@ -19,7 +19,7 @@ function mdKeHtmlAman(teks: string): string {
 
 /** Membuat artikel baru: DRAFT, atau langsung DIAJUKAN ke redaksi. */
 export async function POST(request: Request) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   }

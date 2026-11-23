@@ -1,10 +1,10 @@
 import * as XLSX from "xlsx";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import { mingguDalamTahun, nominalUntukMinggu, statusTampilanKas, tanggalDateOnly, tanggalWib } from "@/lib/kas";
 
 export async function GET(request: Request) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) return Response.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   if (!user.permissions.includes("kas.kelola")) return Response.json({ error: "Izin kas.kelola diperlukan." }, { status: 403 });
 

@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import { tanggalDateOnly } from "@/lib/kas";
 
 type Context = { params: Promise<{ id: string }> };
 
 /** PATCH /api/admin/kas/[id] — setujui atau tolak pengajuan transfer. */
 export async function PATCH(request: Request, { params }: Context) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   }

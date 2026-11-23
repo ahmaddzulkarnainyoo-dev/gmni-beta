@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUser } from "@/lib/session";
+import { requireActiveUser } from "@/lib/session";
 import { verifikasiTotp } from "@/lib/totp";
 
 /** POST /api/kader/dua-faktor/konfirmasi — aktifkan 2FA setelah verifikasi kode. */
 export async function POST(req: Request) {
-  const user = await requireAuthUser();
+  const user = await requireActiveUser();
   const body = (await req.json().catch(() => null)) as { kode?: string } | null;
   const kode = (body?.kode ?? "").trim();
   if (!kode) {

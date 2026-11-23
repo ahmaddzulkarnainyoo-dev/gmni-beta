@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 
 const MAKS_TEPUK_PER_USER = 50;
 
@@ -19,7 +19,7 @@ export async function GET(
   if (!artikel) {
     return NextResponse.json({ error: "Artikel tidak ditemukan." }, { status: 404 });
   }
-  const sesi = await getSessionUser();
+  const sesi = await getActiveSessionUser();
   let saya = 0;
   if (sesi) {
     const baris = await prisma.apresiasi.findUnique({
@@ -39,7 +39,7 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Masuk dulu untuk memberi apresiasi." }, { status: 401 });
   }

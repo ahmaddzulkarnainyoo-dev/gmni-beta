@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import {
   mingguDalamTahun,
   nominalUntukMinggu,
@@ -17,7 +17,7 @@ function csvCell(value: string | number): string {
 
 /** GET /api/admin/kas/ekspor?tahun=YYYY — matrix kas tahunan ke CSV. */
 export async function GET(request: Request) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   }

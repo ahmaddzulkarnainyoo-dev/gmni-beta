@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 
 /**
  * GET /api/kader/follow — daftar kader yang diikuti + statistik untuk
  * widget dasbor & tombol ikuti (Sub-fase 4.3 — kolaborasi).
  */
 export async function GET() {
-  const sesi = await getSessionUser();
+  const sesi = await getActiveSessionUser();
   if (!sesi) {
     return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   }

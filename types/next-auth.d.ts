@@ -9,6 +9,7 @@ declare module "next-auth" {
       roleId?: string;
       roleNama?: string;
       permissions?: string[];
+      twoFactorEnabled?: boolean;
     } & DefaultSession["user"];
   }
 
@@ -17,6 +18,7 @@ declare module "next-auth" {
     roleId?: string;
     roleNama?: string;
     permissions?: string[];
+    twoFactorEnabled?: boolean;
   }
 }
 
@@ -27,5 +29,6 @@ declare module "next-auth/jwt" {
     roleId?: string;
     roleNama?: string;
     permissions?: string[];
+    twoFactorEnabled?: boolean;
   }
 }

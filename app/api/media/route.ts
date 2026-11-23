@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/session";
+import { getActiveSessionUser } from "@/lib/session";
 import { unggahKeSupabase, validasiGambar } from "@/lib/storage";
 
 const ROLES_ADMIN = ["Super Admin", "Editor"];
@@ -18,7 +18,7 @@ const MAKS_BYTE_PROFIL = 2 * 1024 * 1024;
  * belum siap, gunakan fallback URL manual.
  */
 export async function POST(request: Request) {
-  const user = await getSessionUser();
+  const user = await getActiveSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Harus masuk terlebih dahulu." }, { status: 401 });
   }
