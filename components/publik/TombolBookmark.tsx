@@ -8,8 +8,8 @@ export function TombolBookmark({ artikelId, login }: { artikelId: string; login:
   const router = useRouter();
   const { tampilkan } = useToast();
   const [tersimpan, setTersimpan] = useState(false);
-  const [memuat, setMemuat] = useState(true);
-  useEffect(() => { if (!login) { setMemuat(false); return; } fetch(`/api/artikel/${artikelId}/bookmark`).then((res) => res.json()).then((data: { tersimpan?: boolean }) => setTersimpan(Boolean(data.tersimpan))).catch(() => undefined).finally(() => setMemuat(false)); }, [artikelId, login]);
+  const [memuat, setMemuat] = useState(login);
+  useEffect(() => { if (!login) return; fetch(`/api/artikel/${artikelId}/bookmark`).then((res) => res.json()).then((data: { tersimpan?: boolean }) => setTersimpan(Boolean(data.tersimpan))).catch(() => undefined).finally(() => setMemuat(false)); }, [artikelId, login]);
   async function toggle() {
     if (!login) { tampilkan("Masuk untuk menyimpan artikel.", "error"); router.push("/login"); return; }
     setMemuat(true);

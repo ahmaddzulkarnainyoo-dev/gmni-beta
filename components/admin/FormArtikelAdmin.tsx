@@ -181,6 +181,32 @@ const [bukaPratinjau, setBukaPratinjau] = useState(false);
     setInfo("Sisipan video YouTube ditambahkan.");
   }
 
+  /** Sisip tautan pada teks yang sedang dipilih atau dengan label bawaan. */
+  function sisipTautan() {
+    const ta = kontenRef.current;
+    const mulai = ta?.selectionStart ?? konten.length;
+    const akhir = ta?.selectionEnd ?? mulai;
+    const terpilih = konten.slice(mulai, akhir);
+    const masukanUrl = window.prompt("Tempel URL tautan:", "https://");
+    if (!masukanUrl) return;
+    const url = masukanUrl.trim();
+    if (!/^(https?:\/\/|\/)/i.test(url) || /^(javascript|data|vbscript):/i.test(url)) {
+      setEror("URL tautan harus berupa http(s) atau path internal yang aman.");
+      return;
+    }
+    const label = terpilih || window.prompt("Teks tautan:", "Baca selengkapnya")?.trim();
+    if (!label) return;
+    const sisipan = `[${label}](${url})`;
+    setKonten(`${konten.slice(0, mulai)}${sisipan}${konten.slice(akhir)}`);
+    setPratinjau(false);
+    setEror(null);
+    setInfo("Tautan ditambahkan.");
+    requestAnimationFrame(() => {
+      ta?.focus();
+      ta?.setSelectionRange(mulai + sisipan.length, mulai + sisipan.length);
+    });
+  }
+
   function toggleTag(id: string) {
     setTagIds((ts) => (ts.includes(id) ? ts.filter((t) => t !== id) : [...ts, id]));
   }
@@ -282,6 +308,13 @@ const [bukaPratinjau, setBukaPratinjau] = useState(false);
               className="shrink-0 border border-transparent px-2 py-1 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:border-gmnimerah-200 hover:bg-white disabled:opacity-50"
             >
               {unggahKonten ? "Mengunggah…" : "Gambar"}
+            </button>
+            <button
+              type="button"
+              onClick={sisipTautan}
+              className="shrink-0 border border-transparent px-2 py-1 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:border-gmnimerah-200 hover:bg-white"
+            >
+              Link
             </button>
             <button
               type="button"

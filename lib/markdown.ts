@@ -18,14 +18,22 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function urlAman(url: string): string | null {
+  const bersih = url.trim();
+  if (!/^(https?:\/\/|\/)/i.test(bersih)) return null;
+  if (/^(javascript|data|vbscript):/i.test(bersih)) return null;
+  return bersih;
+}
+
 function inline(teks: string): string {
-  return teks
+  return esc(teks)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/_(.+?)_/g, "<em>$1</em>")
     .replace(/`(.+?)`/g, "<code>$1</code>")
-    .replace(/\[(.+?)\]\((\S+?)\)/g, (_m, teksTautan, url) => {
-      const aman = String(url).replace(/^(javascript|data):/i, "#");
-      return `<a href="${aman}" rel="nofollow noopener noreferrer" target="_blank">${teksTautan}</a>`;
+    .replace(/\[([^\]]+?)\]\(([^)\s]+)\)/g, (_m, teksTautan, url) => {
+      const aman = urlAman(String(url));
+      if (!aman) return `[${teksTautan}](${String(url)})`;
+      return `<a href="${esc(aman)}" rel="nofollow noopener noreferrer" target="_blank">${teksTautan}</a>`;
     });
 }
 
@@ -49,16 +57,17 @@ export function mdKeHtml(md: string): string {
 
     // Gambar ber-kaption: ![caption](url) — satu baris penuh. URL hanya
     // http(s):// atau path internal "/" (anti javascript:/data: XSS).
-    const cocokGambar = b.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/);
+    const cocokGambar = b.match(/^!\[([^\]]*)\]\((.+)\)$/);
     if (cocokGambar) {
       tutupList();
       const [, keterangan, urlMentah] = cocokGambar;
-      if (/^(https?:\/\/|\/)/i.test(urlMentah)) {
+      const url = urlAman(urlMentah);
+      if (url) {
         const keteranganHtml = keterangan
-          ? `<figcaption>${inline(esc(keterangan))}</figcaption>`
+          ? `<figcaption>${inline(keterangan)}</figcaption>`
           : "";
         hasil.push(
-          `<figure class="konten-gambar"><img src="${esc(urlMentah)}" alt="${esc(keterangan)}" loading="lazy"/>${keteranganHtml}</figure>`,
+          `<figure class="konten-gambar"><img src="${esc(url)}" alt="${esc(keterangan)}" loading="lazy"/>${keteranganHtml}</figure>`,
         );
         continue;
       }
@@ -79,30 +88,30 @@ export function mdKeHtml(md: string): string {
       tutupList();
       const level = (b.match(/^#+/) ?? [""])[0].length;
       const teks = b.replace(/^#+\s+/, "");
-      hasil.push(`<h${level}>${inline(esc(teks))}</h${level}>`);
+      hasil.push(`<h${level}>${inline(teks)}</h${level}>`);
     } else if (/^[-*]\s/.test(b)) {
       if (listAktif !== "ul") {
         tutupList();
         hasil.push("<ul>");
         listAktif = "ul";
       }
-      hasil.push(`<li>${inline(esc(b.replace(/^[-*]\s+/, "")))}</li>`);
+      hasil.push(`<li>${inline(b.replace(/^[-*]\s+/, ""))}</li>`);
     } else if (/^\d+\.\s/.test(b)) {
       if (listAktif !== "ol") {
         tutupList();
         hasil.push("<ol>");
         listAktif = "ol";
       }
-      hasil.push(`<li>${inline(esc(b.replace(/^\d+\.\s+/, "")))}</li>`);
-    } else if (/^&gt;\s?/.test(b)) {
+      hasil.push(`<li>${inline(b.replace(/^\d+\.\s+/, ""))}</li>`);
+    } else if (/^>\s?/.test(b)) {
       tutupList();
-      hasil.push(`<blockquote>${inline(esc(b.replace(/^&gt;\s?/, "")))}</blockquote>`);
+      hasil.push(`<blockquote>${inline(b.replace(/^>\s?/, ""))}</blockquote>`);
     } else if (/^-{3,}$/.test(b)) {
       tutupList();
       hasil.push("<hr/>");
     } else {
       tutupList();
-      hasil.push(`<p>${inline(esc(b))}</p>`);
+      hasil.push(`<p>${inline(b)}</p>`);
     }
   }
   tutupList();

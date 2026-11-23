@@ -9,7 +9,12 @@ export function TombolBagikan({ judul, url }: Props) {
   const [terbuka, setTerbuka] = useState(false);
   const [tersalin, setTersalin] = useState(false);
   const [nativeTersedia, setNativeTersedia] = useState(false);
-  useEffect(() => setNativeTersedia(typeof navigator !== "undefined" && typeof navigator.share === "function"), []);
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setNativeTersedia(typeof navigator.share === "function");
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, []);
 
   async function salin() {
     if (!(await salinTeks(url))) return;

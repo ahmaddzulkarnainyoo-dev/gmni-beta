@@ -226,7 +226,7 @@ export async function unggahKeSupabase(
     "x-upsert": "true",
   };
 
-  let res = await fetch(endpoint, {
+  const res = await fetch(endpoint, {
     method: "POST",
     headers,
     body: new Uint8Array(bytes),

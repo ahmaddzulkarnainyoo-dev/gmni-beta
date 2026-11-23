@@ -182,7 +182,7 @@ export function PencarianCepat({
             if (saran.length > 0) setBuka(true);
           }}
           onBlur={() => setBuka(false)}
-          className="w-full rounded-full border-2 border-hitam-900 bg-white py-4 pl-12 pr-24 font-sans text-base text-hitam-900 shadow-[4px_4px_0_0_var(--color-hitam-900)] outline-none transition-shadow placeholder:text-hitam-400 focus:shadow-[6px_6px_0_0_var(--color-gmnimerah-500)]"
+          className="w-full appearance-none rounded-full border-2 border-hitam-900 bg-white py-4 pl-12 pr-24 font-sans text-base text-hitam-900 shadow-[4px_4px_0_0_var(--color-hitam-900)] outline-none transition-shadow placeholder:text-hitam-400 focus:shadow-[6px_6px_0_0_var(--color-gmnimerah-500)]"
         />
         {(memuat || normalKueri !== "") && (
           <span className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center gap-1.5">

@@ -58,6 +58,14 @@
 }
 
 @layer base {
+  /* Input pencarian memiliki tombol clear buatan sendiri agar konsisten
+     lintas browser. Tombol bawaan WebKit harus disembunyikan. */
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
   html {
     scroll-behavior: smooth;
     /* Cegah horizontal scroll/overflow di mobile (overflow-x: clip TIDAK

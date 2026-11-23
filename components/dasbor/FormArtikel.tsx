@@ -184,6 +184,34 @@ export function FormArtikel({
     setInfo("Sisipan video YouTube ditambahkan.");
   }
 
+  /** Sisip tautan pada teks yang sedang dipilih atau dengan label bawaan. */
+  function sisipTautan() {
+    const ta = kontenRef.current;
+    const mulai = ta?.selectionStart ?? konten.length;
+    const akhir = ta?.selectionEnd ?? mulai;
+    const terpilih = konten.slice(mulai, akhir);
+    const masukanUrl = window.prompt("Tempel URL tautan:", "https://");
+    if (!masukanUrl) return;
+    const url = masukanUrl.trim();
+    if (!/^(https?:\/\/|\/)/i.test(url) || /^(javascript|data|vbscript):/i.test(url)) {
+      setEror("URL tautan harus berupa http(s) atau path internal yang aman.");
+      return;
+    }
+    const label = terpilih || window.prompt("Teks tautan:", "Baca selengkapnya")?.trim();
+    if (!label) return;
+    const awal = konten.slice(0, mulai);
+    const akhirKonten = konten.slice(akhir);
+    const sisipan = `[${label}](${url})`;
+    setKonten(`${awal}${sisipan}${akhirKonten}`);
+    setPratinjau(false);
+    setEror(null);
+    setInfo("Tautan ditambahkan.");
+    requestAnimationFrame(() => {
+      ta?.focus();
+      ta?.setSelectionRange(mulai + sisipan.length, mulai + sisipan.length);
+    });
+  }
+
   function toggleTag(id: string) {
     setTagIds((ts) => (ts.includes(id) ? ts.filter((t) => t !== id) : [...ts, id]));
   }
@@ -248,7 +276,7 @@ export function FormArtikel({
   }
 
   return (
-    <form onSubmit={simpan} className="pb-24 sm:pb-6">
+    <form onSubmit={simpan} className="pb-28 sm:pb-6">
       {/* Aksi halaman dipisahkan dari toolbar agar tidak bertumpuk di mobile. */}
       <div className="sticky top-0 z-30 -mx-3 mb-3 border-b border-hitam-200 bg-kertas-50/90 px-3 py-2 backdrop-blur-md sm:-mx-4 sm:mb-4 sm:px-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -301,6 +329,14 @@ export function FormArtikel({
               aria-label="Sisipkan gambar"
             >
               {unggahGambar ? "Mengunggah…" : "Gambar"}
+            </button>
+            <button
+              type="button"
+              onClick={sisipTautan}
+              className="min-h-10 shrink-0 rounded-full border border-transparent px-3 py-2 font-mono text-[11px] font-bold text-gmnimerah-700 transition-colors hover:border-gmnimerah-200 hover:bg-white"
+              aria-label="Sisipkan tautan"
+            >
+              Link
             </button>
             <button
               type="button"
@@ -488,7 +524,7 @@ export function FormArtikel({
       </PanelPengaturan>
 
       {/* Bilah aksi bawah — lengket + blur, penanda gaya editor fokus konten */}
-      <div className="sticky bottom-0 z-30 -mx-3 mt-10 border-t border-hitam-200 bg-kertas-50/90 px-3 py-3 backdrop-blur-md sm:-mx-4 sm:px-4">
+      <div className="sticky bottom-0 z-30 -mx-3 mt-10 border-t border-hitam-200 bg-kertas-50/90 px-3 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-md sm:-mx-4 sm:px-4 sm:pb-3">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3">
           {buat ? (
             <>
